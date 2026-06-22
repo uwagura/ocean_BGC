@@ -277,7 +277,7 @@ module cobalt_types
     real  swim_max         ! maximum swimming speed for vertical migration, positive downwards (m sec-1)
     real swim_ref          ! mpoupon
     real dvm_I_thresh      ! irradiance threshold for DVM swimming (watts m-2)
-    real k_I_dvm           ! irradiance scaling for DVM swimming (watts m-2)
+
     real swim_stop_o2      ! oxygen concentration limit for swimming
     real phi_aresp         ! fraction of ingested N to active (food-dependent) respiration
     real assim_eff_max     ! zooplankton maximum assimilation efficiency
