@@ -19,6 +19,7 @@ module cobalt_types
   !The following variables for using this module
   ! are overwritten by generic_tracer_nml namelist
   logical, public :: do_nh3_diag                             !< logic for setting NH3 diagnostic tracer field
+  logical, public :: do_dvm = .false.                        !< If true, activate diel vertical migration (DVM) and migrating zooplankton groups
 
 ! Namelist Options
 
