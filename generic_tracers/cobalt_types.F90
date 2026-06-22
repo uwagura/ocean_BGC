@@ -40,9 +40,10 @@ module cobalt_types
                                             !! 3-update with temperature dependence
 
   ! parameters
-  integer, parameter, public :: NUM_PHYTO = 4 !< total number of phytoplankton groups
-  integer, parameter, public :: NUM_ZOO = 5   !< total number of zooplankton groups
-  integer, parameter, public :: NUM_BACT = 1  !< total number of bacteria groups
+  integer, parameter, public :: NUM_PHYTO = 4    !< total number of phytoplankton groups
+  integer, parameter, public :: NUM_ZOO = 5      !< total number of zooplankton groups (including DVM groups)
+  integer, parameter, public :: NUM_BASE_ZOO = 3 !< number of non-DVM zooplankton groups (small, medium, large)
+  integer, parameter, public :: NUM_BACT = 1     !< total number of bacteria groups
   integer, parameter, public :: NUM_PREY = 11  !< total numbers of prey groups
   integer, parameter, public :: DIAZO      = 1 !< ID for diazotrophs
   integer, parameter, public :: LARGE      = 2 !< ID for large phytoplankton

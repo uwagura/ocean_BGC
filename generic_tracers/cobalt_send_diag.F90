@@ -15,6 +15,7 @@
 module COBALT_send_diag
 
   use cobalt_types
+  use COBALT_eco, only: eco_cobalt_send_diag
 
   use time_manager_mod,  only: time_type
 
@@ -666,8 +667,6 @@ module COBALT_send_diag
             zoo(1)%f_n_100(i,j) = cobalt%p_nsmz(i,j,1,tau) * rho_dzt(i,j,1)
             zoo(2)%f_n_100(i,j) = cobalt%p_nmdz(i,j,1,tau) * rho_dzt(i,j,1)
             zoo(3)%f_n_100(i,j) = cobalt%p_nlgz(i,j,1,tau) * rho_dzt(i,j,1)
-            zoo(4)%f_n_100(i,j) = (cobalt%p_nvmmdz(i,j,1,tau) + cobalt%p_nvmmdz_gut(i,j,1,tau)+ cobalt%p_nvmmdz_met(i,j,1,tau))* rho_dzt(i,j,1)
-            zoo(5)%f_n_100(i,j) = (cobalt%p_nvmlgz(i,j,1,tau) + cobalt%p_nvmlgz_gut(i,j,1,tau)+ cobalt%p_nvmlgz_met(i,j,1,tau)) * rho_dzt(i,j,1)
             bact(1)%f_n_100(i,j) = cobalt%p_nbact(i,j,1,tau) * rho_dzt(i,j,1)
             cobalt%f_ndet_100(i,j) = cobalt%p_ndet(i,j,1,tau) * rho_dzt(i,j,1)
             cobalt%f_ndet_fast_100(i,j) = cobalt%p_ndet_fast(i,j,1,tau) * rho_dzt(i,j,1)
@@ -728,8 +727,6 @@ module COBALT_send_diag
                 zoo(1)%f_n_100(i,j) = zoo(1)%f_n_100(i,j) + cobalt%p_nsmz(i,j,k,tau) * rho_dzt(i,j,k)
                 zoo(2)%f_n_100(i,j) = zoo(2)%f_n_100(i,j) + cobalt%p_nmdz(i,j,k,tau) * rho_dzt(i,j,k)
                 zoo(3)%f_n_100(i,j) = zoo(3)%f_n_100(i,j) + cobalt%p_nlgz(i,j,k,tau) * rho_dzt(i,j,k)
-                zoo(4)%f_n_100(i,j) = zoo(4)%f_n_100(i,j) + (cobalt%p_nvmmdz(i,j,k,tau)+cobalt%p_nvmmdz_gut(i,j,k,tau)+cobalt%p_nvmmdz_met(i,j,k,tau)) * rho_dzt(i,j,k)
-                zoo(5)%f_n_100(i,j) = zoo(5)%f_n_100(i,j) + (cobalt%p_nvmlgz(i,j,k,tau)+cobalt%p_nvmlgz_gut(i,j,k,tau)+cobalt%p_nvmlgz_met(i,j,k,tau)) * rho_dzt(i,j,k)
                 bact(1)%f_n_100(i,j) = bact(1)%f_n_100(i,j) + cobalt%p_nbact(i,j,k,tau) * rho_dzt(i,j,k)
                 cobalt%f_ndet_100(i,j) = cobalt%f_ndet_100(i,j) + cobalt%p_ndet(i,j,k,tau)*rho_dzt(i,j,k)
                 cobalt%f_ndet_fast_100(i,j) = cobalt%f_ndet_fast_100(i,j) + cobalt%p_ndet_fast(i,j,k,tau)*rho_dzt(i,j,k)
@@ -786,8 +783,6 @@ module COBALT_send_diag
               zoo(1)%f_n_100(i,j) = zoo(1)%f_n_100(i,j) + cobalt%p_nsmz(i,j,k_100,tau) * drho_dzt
               zoo(2)%f_n_100(i,j) = zoo(2)%f_n_100(i,j) + cobalt%p_nmdz(i,j,k_100,tau) * drho_dzt
               zoo(3)%f_n_100(i,j) = zoo(3)%f_n_100(i,j) + cobalt%p_nlgz(i,j,k_100,tau) * drho_dzt
-              zoo(4)%f_n_100(i,j) = zoo(4)%f_n_100(i,j) + (cobalt%p_nvmmdz(i,j,k_100,tau) + cobalt%p_nvmmdz_gut(i,j,k_100,tau) + cobalt%p_nvmmdz_met(i,j,k_100,tau)) * drho_dzt
-              zoo(5)%f_n_100(i,j) = zoo(5)%f_n_100(i,j) + (cobalt%p_nvmlgz(i,j,k_100,tau) + cobalt%p_nvmlgz_gut(i,j,k_100,tau) + cobalt%p_nvmlgz_met(i,j,k_100,tau)) * drho_dzt
               bact(1)%f_n_100(i,j) = bact(1)%f_n_100(i,j) + cobalt%p_nbact(i,j,k_100,tau) * drho_dzt
               cobalt%f_ndet_100(i,j) = cobalt%f_ndet_100(i,j) + cobalt%p_ndet(i,j,k_100,tau)*drho_dzt
               cobalt%f_ndet_fast_100(i,j) = cobalt%f_ndet_fast_100(i,j) + cobalt%p_ndet_fast(i,j,k_100,tau)*drho_dzt
@@ -837,10 +832,12 @@ module COBALT_send_diag
             used = g_send_data(phyto(n)%id_f_n_100, phyto(n)%f_n_100, &
               model_time, rmask = grid_tmask(:,:,1), is_in=isc, js_in=jsc, ie_in=iec, je_in=jec)
           enddo
-          do n = 1, NUM_ZOO  !{
+          do n = 1, NUM_BASE_ZOO  !{
             used = g_send_data(zoo(n)%id_f_n_100, zoo(n)%f_n_100, &
               model_time, rmask = grid_tmask(:,:,1), is_in=isc, js_in=jsc, ie_in=iec, je_in=jec)
           enddo
+          if (do_dvm) call eco_cobalt_send_diag(tracer_list, model_time, grid_tmask, &
+            rho_dzt, ilb, jlb, tau, zoo, cobalt, post_vertdiff=.true.)
           used = g_send_data(bact(1)%id_f_n_100, bact(1)%f_n_100, &
             model_time, rmask = grid_tmask(:,:,1), is_in=isc, js_in=jsc, ie_in=iec, je_in=jec)
           used = g_send_data(cobalt%id_f_ndet_100, cobalt%f_ndet_100, &
@@ -1549,7 +1546,7 @@ module COBALT_send_diag
           !
           ! Send zooplankton ingestion, production and limitation diagnostic data
           !
-          do n= 1, NUM_ZOO
+          do n= 1, NUM_BASE_ZOO
             used = g_send_data(zoo(n)%id_jzloss_n, zoo(n)%jzloss_n, &
               model_time, rmask = grid_tmask, is_in=isc, js_in=jsc, ks_in=1,ie_in=iec, je_in=jec, ke_in=nk)
             used = g_send_data(zoo(n)%id_jhploss_n, zoo(n)%jhploss_n, &
@@ -1601,6 +1598,8 @@ module COBALT_send_diag
             used = g_send_data(zoo(n)%id_temp_lim, zoo(n)%temp_lim, &
               model_time, rmask = grid_tmask, is_in=isc, js_in=jsc, ks_in=1,ie_in=iec, je_in=jec, ke_in=nk)
           enddo
+          if (do_dvm) call eco_cobalt_send_diag(tracer_list, model_time, grid_tmask, &
+            rho_dzt, ilb, jlb, tau, zoo, cobalt, post_vertdiff=.false.)
 
           !
           ! General COBALT Production diagnostics (not specific to phytoplankton, zooplankton or bacteria)
@@ -1927,7 +1926,7 @@ module COBALT_send_diag
           ! Zooplankton 100m flux integrals - generalized to define production terms for all zooplankton regardless of
           ! default settings.  This may create zero arrays in some cases, but supports setting changes
           !
-          do n= 1, NUM_ZOO  !{
+          do n= 1, NUM_BASE_ZOO  !{
             used = g_send_data(zoo(n)%id_jprod_n_100, zoo(n)%jprod_n_100, &
               model_time, rmask = grid_tmask(:,:,1), is_in=isc, js_in=jsc, ie_in=iec, je_in=jec)
             used = g_send_data(zoo(n)%id_jingest_n_100, zoo(n)%jingest_n_100, &
