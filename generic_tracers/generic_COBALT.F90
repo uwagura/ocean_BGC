@@ -157,6 +157,7 @@ module generic_COBALT
   use g_tracer_utils, only : g_tracer_is_prog, g_tracer_vertfill, g_tracer_get_next
 
   use cobalt_types
+  use cobalt_eco, only : cobalt_eco_add_tracers
   use cobalt_send_diag, only : cobalt_send_diagnostics
   use cobalt_reg_diag, only : cobalt_reg_diagnostics
   use cobalt_param_doc, only : get_COBALT_param_file
@@ -187,7 +188,7 @@ module generic_COBALT
                                              !! in generic_COBALT_nml.
 
   namelist /generic_COBALT_nml/ co2_calc, do_14c, do_nh3_atm_ocean_exchange, scheme_nitrif, debug, &
-     imbalance_tolerance,as_param_cobalt
+     imbalance_tolerance,as_param_cobalt, do_dvm
 
   !
   ! Array allocations and flux calculations assume that phyto(1) is the
@@ -2594,95 +2595,7 @@ contains
          units      = 'mol/kg',   &
          prog       = .true.      )
 
-    !
-    !     Medium migrating zooplankton N (Pred zoo + krill)
-    !
-    call g_tracer_add(tracer_list,package_name,&
-         name       = 'nvmmdz',            &
-         longname   = 'medium migrating Zooplankton Nitrogen (Biomass)', &
-         units      = 'mol/kg',         &
-         prog       = .true.,           &
-         move_vertical = .true.)
-
-    call g_tracer_add(tracer_list,package_name,&
-         name       = 'nvmmdz_gut',            &
-         longname   = 'medium migrating Zooplankton Nitrogen (Gut)', &
-         units      = 'mol/kg',         &
-         prog       = .true.,           &
-         move_vertical = .true.)
-
-    call g_tracer_add(tracer_list,package_name,&
-         name       = 'pvmmdz_gut',            &
-         longname   = 'medium migrating Zooplankton Phosphorus (Gut)', &
-         units      = 'mol/kg',         &
-         prog       = .true.,           &
-         move_vertical = .true.)
-
-    call g_tracer_add(tracer_list,package_name,&
-         name       = 'sivmmdz_gut',            &
-         longname   = 'medium migrating Zooplankton Silicon (Gut)', &
-         units      = 'mol/kg',         &
-         prog       = .true.,           &
-         move_vertical = .true.)
-
-    call g_tracer_add(tracer_list,package_name,&
-         name       = 'fevmmdz_gut',            &
-         longname   = 'medium migrating Zooplankton Iron (Gut)', &
-         units      = 'mol/kg',         &
-         prog       = .true.,           &
-         move_vertical = .true.)
-
-    call g_tracer_add(tracer_list,package_name,&
-         name       = 'nvmmdz_met',            &
-         longname   = 'medium migrating Zooplankton Nitrogen (Metabolites)', &
-         units      = 'mol/kg',         &
-         prog       = .true.,           &
-         move_vertical = .true.)
-
-    !
-    !     Large migrating zooplankton N (Pred zoo + krill)
-    !
-    call g_tracer_add(tracer_list,package_name,&
-         name       = 'nvmlgz',            &
-         longname   = 'large migrating Zooplankton Nitrogen (Biomass)', &
-         units      = 'mol/kg',         &
-         prog       = .true.,           &
-         move_vertical = .true.)
-
-    call g_tracer_add(tracer_list,package_name,&
-         name       = 'nvmlgz_gut',            &
-         longname   = 'large migrating Zooplankton Nitrogen (Gut)', &
-         units      = 'mol/kg',         &
-         prog       = .true.,           &
-         move_vertical = .true.)
-
-    call g_tracer_add(tracer_list,package_name,&
-         name       = 'pvmlgz_gut',            &
-         longname   = 'large migrating Zooplankton Phosphorus (Gut)', &
-         units      = 'mol/kg',         &
-         prog       = .true.,           &
-         move_vertical = .true.)
-
-    call g_tracer_add(tracer_list,package_name,&
-         name       = 'sivmlgz_gut',            &
-         longname   = 'large migrating Zooplankton Silicon (Gut)', &
-         units      = 'mol/kg',         &
-         prog       = .true.,           &
-         move_vertical = .true.)
-
-    call g_tracer_add(tracer_list,package_name,&
-         name       = 'fevmlgz_gut',            &
-         longname   = 'large migrating Zooplankton Iron (Gut)', &
-         units      = 'mol/kg',         &
-         prog       = .true.,           &
-         move_vertical = .true.)
-
-    call g_tracer_add(tracer_list,package_name,&
-         name       = 'nvmlgz_met',            &
-         longname   = 'large migrating Zooplankton Nitrogen (Metabolites)', &
-         units      = 'mol/kg',         &
-         prog       = .true.,           &
-         move_vertical = .true.)
+    call cobalt_eco_add_tracers(tracer_list, package_name)
 
 
       if (do_14c) then                                        !<<RADIOCARBON
@@ -3549,6 +3462,7 @@ contains
     end if
     allocate(phos_nh3_exchange(isd:ied,jsd:jed))
 
+    if (do_dvm) then
     allocate(vmmd_rho_dzt(isc:iec,jsc:jec,1:nk))
     allocate(vmlg_rho_dzt(isc:iec,jsc:jec,1:nk))
     allocate(vmmd_prey_rho_dzt(isc:iec,jsc:jec,1:nk))
@@ -3561,6 +3475,7 @@ contains
     allocate(vmlg_int(isc:iec,jsc:jec))
     allocate(vmmd_prey_int(isc:iec,jsc:jec))
     allocate(vmlg_prey_int(isc:iec,jsc:jec))
+    endif
 
     !
     ! Calculate some thickness/vertical reference points for later calculations
@@ -3752,6 +3667,7 @@ contains
     call g_tracer_get_values(tracer_list,'nsmz'    ,'field',zoo(1)%f_n(:,:,:) ,isd,jsd,positive=.true.)
     call g_tracer_get_values(tracer_list,'nmdz'    ,'field',zoo(2)%f_n(:,:,:) ,isd,jsd,positive=.true.)
     call g_tracer_get_values(tracer_list,'nlgz'    ,'field',zoo(3)%f_n(:,:,:) ,isd,jsd,positive=.true.)
+    if (do_dvm) then
     call g_tracer_get_values(tracer_list,'nvmmdz'  ,'field',zoo(4)%f_n(:,:,:) ,isd,jsd,positive=.true.)
     call g_tracer_get_values(tracer_list,'nvmlgz'  ,'field',zoo(5)%f_n(:,:,:) ,isd,jsd,positive=.true.)
     call g_tracer_get_values(tracer_list,'nvmmdz_met'  ,'field',zoo(4)%f_met_n(:,:,:) ,isd,jsd,positive=.true.)
@@ -3764,6 +3680,7 @@ contains
     call g_tracer_get_values(tracer_list,'fevmlgz_gut'  ,'field',zoo(5)%f_gut_fe(:,:,:) ,isd,jsd,positive=.true.)
     call g_tracer_get_values(tracer_list,'sivmmdz_gut'  ,'field',zoo(4)%f_gut_si(:,:,:) ,isd,jsd,positive=.true.)
     call g_tracer_get_values(tracer_list,'sivmlgz_gut'  ,'field',zoo(5)%f_gut_si(:,:,:) ,isd,jsd,positive=.true.)
+    endif
     !
     ! bacteria
     !
@@ -4564,6 +4481,7 @@ contains
     prey_si2n_vec(10) = 0.0
 
 
+    if (do_dvm) then
     do k = 1, nk ; do j = jsc, jec ; do i = isc, iec; !{
         vmmd_rho_dzt(i,j,k) = rho_dzt(i,j,k) * zoo(4)%f_n(i,j,k)
         vmlg_rho_dzt(i,j,k) = rho_dzt(i,j,k) * zoo(5)%f_n(i,j,k)
@@ -4594,14 +4512,14 @@ contains
         vmlg_prey_norm_cum(i,j,1)    = vmlg_prey_rho_dzt(i,j,1)    /   vmlg_prey_int(i,j)
     enddo; enddo;  !}  j, i
 
-
     do k = 2, nk ; do j = jsc, jec ; do i = isc, iec; !{
         ! Normalization and cumulative sum
         vmmd_norm_cum(i,j,k)  = vmmd_norm_cum(i,j,k-1) + vmmd_rho_dzt(i,j,k)    /   vmmd_int(i,j)
         vmlg_norm_cum(i,j,k)    = vmlg_norm_cum(i,j,k-1) + vmlg_rho_dzt(i,j,k)      /   vmlg_int(i,j)
         vmmd_prey_norm_cum(i,j,k)  =  vmmd_prey_norm_cum(i,j,k-1)  + vmmd_prey_rho_dzt(i,j,k)  /   vmmd_prey_int(i,j)
         vmlg_prey_norm_cum(i,j,k)    = vmlg_prey_norm_cum(i,j,k-1) + vmlg_prey_rho_dzt(i,j,k)    /   vmlg_prey_int(i,j)
-    enddo; enddo; enddo;  !}  i, j, k 
+    enddo; enddo; enddo;  !}  i, j, k
+    endif
 
     !
     ! Main loop for calculating predation by zooplankton and higher predators
@@ -5171,9 +5089,9 @@ contains
            ! Upward swimming (during night)
            if ( cobalt%irr_inst(i,j,k) .lt. zoo(n)%dvm_I_thresh ) then
               
-               ! Medium migratory zooplankton (4)
-               if ( n .eq. 4 ) then
-                  if (vmmd_prey_norm_cum(i,j,k) .gt.  vmmd_norm_cum(i,j,k)) then
+                ! Medium migratory zooplankton (4)
+                if ( n .eq. 4 .and. do_dvm ) then
+                   if (vmmd_prey_norm_cum(i,j,k) .gt.  vmmd_norm_cum(i,j,k)) then
                      zoo(n)%vmove(i,j,k) = -swim ! Upward
                      zoo(n)%vmove_met(i,j,k) = -swim ! Upward  
                      zoo(n)%vmove_gut(i,j,k) = -swim ! Upward
@@ -5189,9 +5107,9 @@ contains
                      zoo(n)%vmove_gut_si(i,j,k) = swim ! Downward 
                   endif
              
-               ! Large migratory zooplankton (5)
-               else if ( n .eq. 5 ) then
-                  if (vmlg_prey_norm_cum(i,j,k) .gt.  vmlg_norm_cum(i,j,k)) then
+                ! Large migratory zooplankton (5)
+                else if ( n .eq. 5 .and. do_dvm ) then
+                   if (vmlg_prey_norm_cum(i,j,k) .gt.  vmlg_norm_cum(i,j,k)) then
                      zoo(n)%vmove(i,j,k)        = -swim ! Upward
                      zoo(n)%vmove_met(i,j,k)    = -swim ! Upward  
                      zoo(n)%vmove_gut(i,j,k)    = -swim ! Upward
@@ -5215,30 +5133,30 @@ contains
            ! Downward swimming (during day)
            else
                 
-               ! Medium migratory zooplankton (4)
-               if ( n .eq. 4 ) then
-                   ! Enough oxygen
-                   if (cobalt%f_o2(i,j,k) .gt. zoo(n)%swim_stop_o2) then
-                        zoo(n)%vmove(i,j,k) = swim        ! Downward
-                        zoo(n)%vmove_met(i,j,k) = swim    ! Downward
-                        zoo(n)%vmove_gut(i,j,k) = swim    ! Downward
-                        zoo(n)%vmove_gut_p(i,j,k)  = swim ! Downward
-                        zoo(n)%vmove_gut_fe(i,j,k) = swim ! Downward
-                        zoo(n)%vmove_gut_si(i,j,k) = swim ! Downward
-                   
-                   ! Not enough oxygen
-                   else
-                        zoo(n)%vmove(i,j,k) = 0.0        ! No swimming
-                        zoo(n)%vmove_met(i,j,k) = 0.0    ! No swimming
-                        zoo(n)%vmove_gut(i,j,k) = 0.0    ! No swimming
-                        zoo(n)%vmove_gut_p(i,j,k)  = 0.0 ! No swimming
-                        zoo(n)%vmove_gut_fe(i,j,k) = 0.0 ! No swimming
-                        zoo(n)%vmove_gut_si(i,j,k) = 0.0 ! No swimming
-                   endif
-                                
+                ! Medium migratory zooplankton (4)
+                if ( n .eq. 4 .and. do_dvm ) then
+                    ! Enough oxygen
+                    if (cobalt%f_o2(i,j,k) .gt. zoo(n)%swim_stop_o2) then
+                         zoo(n)%vmove(i,j,k) = swim        ! Downward
+                         zoo(n)%vmove_met(i,j,k) = swim    ! Downward
+                         zoo(n)%vmove_gut(i,j,k) = swim    ! Downward
+                         zoo(n)%vmove_gut_p(i,j,k)  = swim ! Downward
+                         zoo(n)%vmove_gut_fe(i,j,k) = swim ! Downward
+                         zoo(n)%vmove_gut_si(i,j,k) = swim ! Downward
+                    
+                    ! Not enough oxygen
+                    else
+                         zoo(n)%vmove(i,j,k) = 0.0        ! No swimming
+                         zoo(n)%vmove_met(i,j,k) = 0.0    ! No swimming
+                         zoo(n)%vmove_gut(i,j,k) = 0.0    ! No swimming
+                         zoo(n)%vmove_gut_p(i,j,k)  = 0.0 ! No swimming
+                         zoo(n)%vmove_gut_fe(i,j,k) = 0.0 ! No swimming
+                         zoo(n)%vmove_gut_si(i,j,k) = 0.0 ! No swimming
+                    endif
+                                 
 
-               ! Large migratory zooplankton (5)
-               else if ( n .eq. 5 ) then
+                ! Large migratory zooplankton (5)
+                else if ( n .eq. 5 .and. do_dvm ) then
                    ! Enough oxygen
                    if (cobalt%f_o2(i,j,k) .gt. zoo(n)%swim_stop_o2) then
                         zoo(n)%vmove(i,j,k) = swim        ! Downward
@@ -5274,6 +5192,7 @@ contains
        enddo !} n
     enddo; enddo; enddo; !} i, j, k 
 
+    if (do_dvm) then
     ! Medium migrating zoo (group 4)
     call g_tracer_set_values(tracer_list,'nvmmdz',      'vmove',zoo(4)%vmove,        isd,jsd)
     call g_tracer_set_values(tracer_list,'nvmmdz_met',  'vmove',zoo(4)%vmove_met,    isd,jsd)
@@ -5289,6 +5208,7 @@ contains
     call g_tracer_set_values(tracer_list,'pvmlgz_gut',  'vmove',zoo(5)%vmove_gut_p,  isd,jsd)
     call g_tracer_set_values(tracer_list,'fevmlgz_gut', 'vmove',zoo(5)%vmove_gut_fe, isd,jsd)
     call g_tracer_set_values(tracer_list,'sivmlgz_gut', 'vmove',zoo(5)%vmove_gut_si, isd,jsd)
+    endif
 
     call mpp_clock_end(id_clock_other_losses)
 
@@ -5312,25 +5232,25 @@ contains
 
 
        do m = 1,NUM_ZOO
-         if ( m .eq. 4 .or. m .eq. 5) then
-                 zoo(m)%jclear_gut_n(i,j,k)  = (zoo(m)%k_clear_gut + zoo(m)%k_temp_gut * Temp(i,j,k)) * zoo(m)%f_gut_n(i,j,k)
-                 zoo(m)%jclear_gut_p(i,j,k)  = (zoo(m)%k_clear_gut + zoo(m)%k_temp_gut * Temp(i,j,k)) * zoo(m)%f_gut_p(i,j,k)
-                 zoo(m)%jclear_gut_fe(i,j,k) = (zoo(m)%k_clear_gut + zoo(m)%k_temp_gut * Temp(i,j,k)) * zoo(m)%f_gut_fe(i,j,k)
-                 zoo(m)%jclear_gut_si(i,j,k) = (zoo(m)%k_clear_gut + zoo(m)%k_temp_gut * Temp(i,j,k)) * zoo(m)%f_gut_si(i,j,k)
-                 
-                 zoo(m)%lim_nut_n_ingestion(i,j,k) = min(zoo(m)%jclear_gut_n(i,j,k), zoo(m)%jclear_gut_p(i,j,k)/zoo(m)%q_p_2_n)
+          if ( ( m .eq. 4 .or. m .eq. 5 ) .and. do_dvm ) then
+                  zoo(m)%jclear_gut_n(i,j,k)  = (zoo(m)%k_clear_gut + zoo(m)%k_temp_gut * Temp(i,j,k)) * zoo(m)%f_gut_n(i,j,k)
+                  zoo(m)%jclear_gut_p(i,j,k)  = (zoo(m)%k_clear_gut + zoo(m)%k_temp_gut * Temp(i,j,k)) * zoo(m)%f_gut_p(i,j,k)
+                  zoo(m)%jclear_gut_fe(i,j,k) = (zoo(m)%k_clear_gut + zoo(m)%k_temp_gut * Temp(i,j,k)) * zoo(m)%f_gut_fe(i,j,k)
+                  zoo(m)%jclear_gut_si(i,j,k) = (zoo(m)%k_clear_gut + zoo(m)%k_temp_gut * Temp(i,j,k)) * zoo(m)%f_gut_si(i,j,k)
+                  
+                  zoo(m)%lim_nut_n_ingestion(i,j,k) = min(zoo(m)%jclear_gut_n(i,j,k), zoo(m)%jclear_gut_p(i,j,k)/zoo(m)%q_p_2_n)
 
-                 zoo(m)%jprod_ndet(i,j,k)   = zoo(m)%phi_det   * zoo(m)%lim_nut_n_ingestion(i,j,k)
-                 zoo(m)%jprod_pdet(i,j,k)   = zoo(m)%phi_det   * zoo(m)%lim_nut_n_ingestion(i,j,k)*zoo(m)%q_p_2_n
-                 zoo(m)%jprod_sldon(i,j,k)  = zoo(m)%phi_sldon * zoo(m)%lim_nut_n_ingestion(i,j,k)
-                 zoo(m)%jprod_ldon(i,j,k)   = zoo(m)%phi_ldon  * zoo(m)%lim_nut_n_ingestion(i,j,k)
-                 zoo(m)%jprod_srdon(i,j,k)  = zoo(m)%phi_srdon * zoo(m)%lim_nut_n_ingestion(i,j,k)
-                 zoo(m)%jprod_sldop(i,j,k)  = zoo(m)%phi_sldop * zoo(m)%lim_nut_n_ingestion(i,j,k)*zoo(m)%q_p_2_n
-                 zoo(m)%jprod_ldop(i,j,k)   = zoo(m)%phi_ldop  * zoo(m)%lim_nut_n_ingestion(i,j,k)*zoo(m)%q_p_2_n
-                 zoo(m)%jprod_srdop(i,j,k)  = zoo(m)%phi_srdop * zoo(m)%lim_nut_n_ingestion(i,j,k)*zoo(m)%q_p_2_n
-          
-                 zoo(m)%jprod_fedet(i,j,k)  = zoo(m)%phi_det    * zoo(m)%jclear_gut_fe(i,j,k)
-                 zoo(m)%jprod_sidet(i,j,k)  = zoo(m)%phi_det_si * zoo(m)%jclear_gut_si(i,j,k)
+                  zoo(m)%jprod_ndet(i,j,k)   = zoo(m)%phi_det   * zoo(m)%lim_nut_n_ingestion(i,j,k)
+                  zoo(m)%jprod_pdet(i,j,k)   = zoo(m)%phi_det   * zoo(m)%lim_nut_n_ingestion(i,j,k)*zoo(m)%q_p_2_n
+                  zoo(m)%jprod_sldon(i,j,k)  = zoo(m)%phi_sldon * zoo(m)%lim_nut_n_ingestion(i,j,k)
+                  zoo(m)%jprod_ldon(i,j,k)   = zoo(m)%phi_ldon  * zoo(m)%lim_nut_n_ingestion(i,j,k)
+                  zoo(m)%jprod_srdon(i,j,k)  = zoo(m)%phi_srdon * zoo(m)%lim_nut_n_ingestion(i,j,k)
+                  zoo(m)%jprod_sldop(i,j,k)  = zoo(m)%phi_sldop * zoo(m)%lim_nut_n_ingestion(i,j,k)*zoo(m)%q_p_2_n
+                  zoo(m)%jprod_ldop(i,j,k)   = zoo(m)%phi_ldop  * zoo(m)%lim_nut_n_ingestion(i,j,k)*zoo(m)%q_p_2_n
+                  zoo(m)%jprod_srdop(i,j,k)  = zoo(m)%phi_srdop * zoo(m)%lim_nut_n_ingestion(i,j,k)*zoo(m)%q_p_2_n
+           
+                  zoo(m)%jprod_fedet(i,j,k)  = zoo(m)%phi_det    * zoo(m)%jclear_gut_fe(i,j,k)
+                  zoo(m)%jprod_sidet(i,j,k)  = zoo(m)%phi_det_si * zoo(m)%jclear_gut_si(i,j,k)
          else
            ! calculate detritus and dissolved organic production for each zooplankton group
            zoo(m)%jprod_ndet(i,j,k) = zoo(m)%phi_det*zoo(m)%jingest_n(i,j,k)
@@ -5355,8 +5275,9 @@ contains
            cobalt%jprod_ldop(i,j,k) = cobalt%jprod_ldop(i,j,k) + zoo(m)%jprod_ldop(i,j,k)
            cobalt%jprod_srdop(i,j,k) = cobalt%jprod_srdop(i,j,k) + zoo(m)%jprod_srdop(i,j,k)
            cobalt%jprod_fedet(i,j,k) = cobalt%jprod_fedet(i,j,k) + zoo(m)%jprod_fedet(i,j,k)
-           cobalt%jprod_sidet(i,j,k) = cobalt%jprod_sidet(i,j,k) + zoo(m)%jprod_sidet(i,j,k)
-       enddo !} m
+            cobalt%jprod_sidet(i,j,k) = cobalt%jprod_sidet(i,j,k) + zoo(m)%jprod_sidet(i,j,k)
+        endif
+        enddo !} m
 
        ! Production of detritus and dissolved organic material from higher predator egestion
        if (cobalt%do_fastsinking) then
@@ -5464,36 +5385,36 @@ contains
          basal_respiration = zoo(m)%f_n(i,j,k)/(cobalt%refuge_conc + zoo(m)%f_n(i,j,k))* &
                               zoo(m)%temp_lim(i,j,k)*zoo(m)%bresp*zoo(m)%f_n(i,j,k)
 
-         ! Migrating zooplankton
-         if ( m .eq. 4 .or. m .eq. 5) then
-            zoo(m)%jprod_gut_n(i,j,k)   = zoo(m)%jingest_n(i,j,k)
-            zoo(m)%jprod_gut_p(i,j,k)   = zoo(m)%jingest_p(i,j,k)
-            zoo(m)%jprod_gut_fe(i,j,k)  = zoo(m)%jingest_fe(i,j,k)
-            zoo(m)%jprod_gut_si(i,j,k)  = zoo(m)%jingest_sio2(i,j,k)
+          ! Migrating zooplankton
+          if ( ( m .eq. 4 .or. m .eq. 5 ) .and. do_dvm ) then
+             zoo(m)%jprod_gut_n(i,j,k)   = zoo(m)%jingest_n(i,j,k)
+             zoo(m)%jprod_gut_p(i,j,k)   = zoo(m)%jingest_p(i,j,k)
+             zoo(m)%jprod_gut_fe(i,j,k)  = zoo(m)%jingest_fe(i,j,k)
+             zoo(m)%jprod_gut_si(i,j,k)  = zoo(m)%jingest_sio2(i,j,k)
 
-            zoo(m)%jprod_met_n(i,j,k)   = assim_eff * zoo(m)%lim_nut_n_ingestion(i,j,k) 
-            zoo(m)%jclear_met_n(i,j,k)  = zoo(m)%f_met_n(i,j,k)   * zoo(m)%k_clear_met
+             zoo(m)%jprod_met_n(i,j,k)   = assim_eff * zoo(m)%lim_nut_n_ingestion(i,j,k) 
+             zoo(m)%jclear_met_n(i,j,k)  = zoo(m)%f_met_n(i,j,k)   * zoo(m)%k_clear_met
 
-            zoo(m)%jmetabo_n(i,j,k) =  basal_respiration * (1 + abs(zoo(m)%vmove(i,j,k)) / zoo(m)%swim_ref)
-            
-            zoo(m)%jprod_n(i,j,k)   =  zoo(m)%jclear_met_n(i,j,k) - zoo(m)%jmetabo_n(i,j,k)
-            
-            zoo(m)%jprod_nh4(i,j,k)  =  zoo(m)%jclear_gut_n(i,j,k) - zoo(m)%lim_nut_n_ingestion(i,j,k) + zoo(m)%jmetabo_n(i,j,k) +  &
-                                        min(zoo(m)%jprod_n(i,j,k),0.0)
-            zoo(m)%jprod_po4(i,j,k) =  zoo(m)%jclear_gut_p(i,j,k) - zoo(m)%lim_nut_n_ingestion(i,j,k) * zoo(m)%q_p_2_n + &
-                                       zoo(m)%jmetabo_n(i,j,k) * zoo(m)%q_p_2_n  + min(zoo(m)%jprod_n(i,j,k)*zoo(m)%q_p_2_n,0.0)
+             zoo(m)%jmetabo_n(i,j,k) =  basal_respiration * (1 + abs(zoo(m)%vmove(i,j,k)) / zoo(m)%swim_ref)
              
-            zoo(m)%jprod_fed(i,j,k)  = zoo(m)%jclear_gut_fe(i,j,k) - zoo(m)%jprod_fedet(i,j,k)
-            zoo(m)%jprod_sio4(i,j,k) = zoo(m)%jclear_gut_si(i,j,k) - zoo(m)%jprod_sidet(i,j,k)
+             zoo(m)%jprod_n(i,j,k)   =  zoo(m)%jclear_met_n(i,j,k) - zoo(m)%jmetabo_n(i,j,k)
              
-            if (zoo(m)%jprod_n(i,j,k) .lt. 0.0) then
-               ! The negative production (i.e., mortality) is lost to large detritus. Update values
-               ! for zooplankton and for total.
-               zoo(m)%jprod_ndet(i,j,k) = zoo(m)%jprod_ndet(i,j,k) - zoo(m)%jprod_n(i,j,k)
-               zoo(m)%jprod_pdet(i,j,k) = zoo(m)%jprod_pdet(i,j,k) - zoo(m)%jprod_n(i,j,k)*zoo(m)%q_p_2_n
-               cobalt%jprod_ndet(i,j,k) = cobalt%jprod_ndet(i,j,k) - zoo(m)%jprod_n(i,j,k)
-               cobalt%jprod_pdet(i,j,k) = cobalt%jprod_pdet(i,j,k) - zoo(m)%jprod_n(i,j,k)*zoo(m)%q_p_2_n
-            endif
+             zoo(m)%jprod_nh4(i,j,k)  =  zoo(m)%jclear_gut_n(i,j,k) - zoo(m)%lim_nut_n_ingestion(i,j,k) + zoo(m)%jmetabo_n(i,j,k) +  &
+                                         min(zoo(m)%jprod_n(i,j,k),0.0)
+             zoo(m)%jprod_po4(i,j,k) =  zoo(m)%jclear_gut_p(i,j,k) - zoo(m)%lim_nut_n_ingestion(i,j,k) * zoo(m)%q_p_2_n + &
+                                        zoo(m)%jmetabo_n(i,j,k) * zoo(m)%q_p_2_n  + min(zoo(m)%jprod_n(i,j,k)*zoo(m)%q_p_2_n,0.0)
+              
+             zoo(m)%jprod_fed(i,j,k)  = zoo(m)%jclear_gut_fe(i,j,k) - zoo(m)%jprod_fedet(i,j,k)
+             zoo(m)%jprod_sio4(i,j,k) = zoo(m)%jclear_gut_si(i,j,k) - zoo(m)%jprod_sidet(i,j,k)
+              
+             if (zoo(m)%jprod_n(i,j,k) .lt. 0.0) then
+                ! The negative production (i.e., mortality) is lost to large detritus. Update values
+                ! for zooplankton and for total.
+                zoo(m)%jprod_ndet(i,j,k) = zoo(m)%jprod_ndet(i,j,k) - zoo(m)%jprod_n(i,j,k)
+                zoo(m)%jprod_pdet(i,j,k) = zoo(m)%jprod_pdet(i,j,k) - zoo(m)%jprod_n(i,j,k)*zoo(m)%q_p_2_n
+                cobalt%jprod_ndet(i,j,k) = cobalt%jprod_ndet(i,j,k) - zoo(m)%jprod_n(i,j,k)
+                cobalt%jprod_pdet(i,j,k) = cobalt%jprod_pdet(i,j,k) - zoo(m)%jprod_n(i,j,k)*zoo(m)%q_p_2_n
+             endif
 
          ! Non-migrating zooplanktons
          else
@@ -6255,21 +6176,23 @@ contains
     call g_tracer_get_pointer(tracer_list,'sio4'   ,'field',cobalt%p_sio4   )
     call g_tracer_get_pointer(tracer_list,'nsmz'   ,'field',cobalt%p_nsmz   )
     call g_tracer_get_pointer(tracer_list,'nmdz'   ,'field',cobalt%p_nmdz   )
-    call g_tracer_get_pointer(tracer_list,'nlgz'   ,'field',cobalt%p_nlgz   )
-    call g_tracer_get_pointer(tracer_list,'nvmmdz'   ,'field',cobalt%p_nvmmdz   )
-    call g_tracer_get_pointer(tracer_list,'nvmlgz'   ,'field',cobalt%p_nvmlgz   )
-    call g_tracer_get_pointer(tracer_list,'nvmmdz_met'   ,'field',cobalt%p_nvmmdz_met   )
-    call g_tracer_get_pointer(tracer_list,'nvmlgz_met'   ,'field',cobalt%p_nvmlgz_met   )
-    call g_tracer_get_pointer(tracer_list,'nvmmdz_gut'   ,'field',cobalt%p_nvmmdz_gut   )
-    call g_tracer_get_pointer(tracer_list,'nvmlgz_gut'   ,'field',cobalt%p_nvmlgz_gut   )
-    call g_tracer_get_pointer(tracer_list,'pvmmdz_gut'   ,'field',cobalt%p_pvmmdz_gut   )
-    call g_tracer_get_pointer(tracer_list,'pvmlgz_gut'   ,'field',cobalt%p_pvmlgz_gut   )
-    call g_tracer_get_pointer(tracer_list,'fevmmdz_gut'  ,'field',cobalt%p_fevmmdz_gut  )
-    call g_tracer_get_pointer(tracer_list,'fevmlgz_gut'  ,'field',cobalt%p_fevmlgz_gut  )
-    call g_tracer_get_pointer(tracer_list,'sivmmdz_gut'  ,'field',cobalt%p_sivmmdz_gut  )
-    call g_tracer_get_pointer(tracer_list,'sivmlgz_gut'  ,'field',cobalt%p_sivmlgz_gut  )
+     call g_tracer_get_pointer(tracer_list,'nlgz'   ,'field',cobalt%p_nlgz   )
+     if (do_dvm) then
+     call g_tracer_get_pointer(tracer_list,'nvmmdz'   ,'field',cobalt%p_nvmmdz   )
+     call g_tracer_get_pointer(tracer_list,'nvmlgz'   ,'field',cobalt%p_nvmlgz   )
+     call g_tracer_get_pointer(tracer_list,'nvmmdz_met'   ,'field',cobalt%p_nvmmdz_met   )
+     call g_tracer_get_pointer(tracer_list,'nvmlgz_met'   ,'field',cobalt%p_nvmlgz_met   )
+     call g_tracer_get_pointer(tracer_list,'nvmmdz_gut'   ,'field',cobalt%p_nvmmdz_gut   )
+     call g_tracer_get_pointer(tracer_list,'nvmlgz_gut'   ,'field',cobalt%p_nvmlgz_gut   )
+     call g_tracer_get_pointer(tracer_list,'pvmmdz_gut'   ,'field',cobalt%p_pvmmdz_gut   )
+     call g_tracer_get_pointer(tracer_list,'pvmlgz_gut'   ,'field',cobalt%p_pvmlgz_gut   )
+     call g_tracer_get_pointer(tracer_list,'fevmmdz_gut'  ,'field',cobalt%p_fevmmdz_gut  )
+     call g_tracer_get_pointer(tracer_list,'fevmlgz_gut'  ,'field',cobalt%p_fevmlgz_gut  )
+     call g_tracer_get_pointer(tracer_list,'sivmmdz_gut'  ,'field',cobalt%p_sivmmdz_gut  )
+     call g_tracer_get_pointer(tracer_list,'sivmlgz_gut'  ,'field',cobalt%p_sivmlgz_gut  )
+     endif
 
-    if (do_14c) then
+     if (do_14c) then
        call g_tracer_get_pointer(tracer_list,'di14c','field',cobalt%p_di14c)
        call g_tracer_get_pointer(tracer_list,'do14c','field',cobalt%p_do14c)
     endif
@@ -6287,61 +6210,76 @@ contains
     allocate(net_srcfe(isc:iec,jsc:jec,1:nk))
     allocate(pre_totsi(isc:iec,jsc:jec,1:nk))
     do k = 1, nk ; do j = jsc, jec ; do i = isc, iec  !{
-         pre_totn(i,j,k) = (cobalt%p_no3(i,j,k,tau) + cobalt%p_nh4(i,j,k,tau) + &
-                    cobalt%p_ndi(i,j,k,tau)         + cobalt%p_nlg(i,j,k,tau) + &
-                    cobalt%p_nmd(i,j,k,tau)         + &
-                    cobalt%p_nsm(i,j,k,tau)         + cobalt%p_nbact(i,j,k,tau) + &
-                    cobalt%p_ldon(i,j,k,tau)        + cobalt%p_sldon(i,j,k,tau) + &
-                    cobalt%p_srdon(i,j,k,tau)       + cobalt%p_ndet(i,j,k,tau) + &
-					     cobalt%p_ndet_fast(i,j,k,tau)   + &
-                    cobalt%p_nsmz(i,j,k,tau)        + cobalt%p_nmdz(i,j,k,tau) + &
-                    cobalt%p_nlgz(i,j,k,tau)        + cobalt%p_nvmmdz(i,j,k,tau) + &
-                    cobalt%p_nvmmdz_gut(i,j,k,tau)  + cobalt%p_nvmmdz_met(i,j,k,tau) + &
-                    cobalt%p_nvmlgz(i,j,k,tau)      + cobalt%p_nvmlgz_gut(i,j,k,tau) + &
-                    cobalt%p_nvmlgz_met(i,j,k,tau))*grid_tmask(i,j,k)
+          pre_totn(i,j,k) = (cobalt%p_no3(i,j,k,tau) + cobalt%p_nh4(i,j,k,tau) + &
+                     cobalt%p_ndi(i,j,k,tau)         + cobalt%p_nlg(i,j,k,tau) + &
+                     cobalt%p_nmd(i,j,k,tau)         + &
+                     cobalt%p_nsm(i,j,k,tau)         + cobalt%p_nbact(i,j,k,tau) + &
+                     cobalt%p_ldon(i,j,k,tau)        + cobalt%p_sldon(i,j,k,tau) + &
+                     cobalt%p_srdon(i,j,k,tau)       + cobalt%p_ndet(i,j,k,tau) + &
+                     cobalt%p_ndet_fast(i,j,k,tau)   + &
+                     cobalt%p_nsmz(i,j,k,tau)        + cobalt%p_nmdz(i,j,k,tau) + &
+                     cobalt%p_nlgz(i,j,k,tau))*grid_tmask(i,j,k)
+          if (do_dvm) then
+          pre_totn(i,j,k) = pre_totn(i,j,k) + (cobalt%p_nvmmdz(i,j,k,tau) + &
+                     cobalt%p_nvmmdz_gut(i,j,k,tau)  + cobalt%p_nvmmdz_met(i,j,k,tau) + &
+                     cobalt%p_nvmlgz(i,j,k,tau)      + cobalt%p_nvmlgz_gut(i,j,k,tau) + &
+                     cobalt%p_nvmlgz_met(i,j,k,tau))*grid_tmask(i,j,k)
+          endif
          net_srcn(i,j,k) = (phyto(DIAZO)%juptake_n2(i,j,k) - cobalt%jno3denit_wc(i,j,k) - &
                     cobalt%jnamx(i,j,k) + cobalt%jno3_iceberg(i,j,k))*dt*grid_tmask(i,j,k)
          ! << Apply neritic CaCO3 burial contribution to net carbon source/sink term
          ! This term is zero when neritic burial is turned off (default: jdic_caco3_nerbur = 0.0)
          net_srcc(i,j,k) = -cobalt%jdic_caco3_nerbur(i,j,k) *dt*grid_tmask(i,j,k)
          ! >>
-         pre_totc(i,j,k) = (cobalt%p_dic(i,j,k,tau) + &
-                    cobalt%p_cadet_arag(i,j,k,tau)        + cobalt%p_cadet_calc(i,j,k,tau) + &
-                    cobalt%c_2_n*(cobalt%p_ndi(i,j,k,tau) + cobalt%p_nlg(i,j,k,tau) + &
-                    cobalt%p_nmd(i,j,k,tau)         + &
-                    cobalt%p_nsm(i,j,k,tau)         + cobalt%p_nbact(i,j,k,tau) + &
-                    cobalt%p_ldon(i,j,k,tau)        + cobalt%p_sldon(i,j,k,tau) + &
-                    cobalt%p_srdon(i,j,k,tau)       + cobalt%p_ndet(i,j,k,tau) + &
-					     cobalt%p_ndet_fast(i,j,k,tau)   + &
-                    cobalt%p_nsmz(i,j,k,tau)        + cobalt%p_nmdz(i,j,k,tau) + &
-                    cobalt%p_nlgz(i,j,k,tau)        + cobalt%p_nvmmdz(i,j,k,tau) + &
-                    cobalt%p_nvmmdz_gut(i,j,k,tau)  + cobalt%p_nvmmdz_met(i,j,k,tau) + &
-                    cobalt%p_nvmlgz(i,j,k,tau)      + cobalt%p_nvmlgz_gut(i,j,k,tau) + &
-                    cobalt%p_nvmlgz_met(i,j,k,tau)))*grid_tmask(i,j,k)
-         pre_totp(i,j,k) = (cobalt%p_po4(i,j,k,tau) + cobalt%p_pdi(i,j,k,tau) + &
-                    cobalt%p_plg(i,j,k,tau) + cobalt%p_pmd(i,j,k,tau) + cobalt%p_psm(i,j,k,tau) + &
-                    cobalt%p_ldop(i,j,k,tau) + cobalt%p_sldop(i,j,k,tau) + &
-                    cobalt%p_srdop(i,j,k,tau) + cobalt%p_pdet(i,j,k,tau) + &
-					     cobalt%p_pdet_fast(i,j,k,tau) + &
-                    cobalt%p_nsmz(i,j,k,tau)*zoo(1)%q_p_2_n + &
-                    cobalt%p_nmdz(i,j,k,tau)*zoo(2)%q_p_2_n + &
-                    cobalt%p_nlgz(i,j,k,tau)*zoo(3)%q_p_2_n + &
-                    cobalt%p_nvmmdz(i,j,k,tau)*zoo(4)%q_p_2_n + &
-                    cobalt%p_nvmlgz(i,j,k,tau)*zoo(5)%q_p_2_n + &
-                    cobalt%p_pvmmdz_gut(i,j,k,tau) + &
-                    cobalt%p_pvmlgz_gut(i,j,k,tau) + &
-                    cobalt%p_nvmmdz_met(i,j,k,tau)*zoo(4)%q_p_2_n + &
-                    cobalt%p_nvmlgz_met(i,j,k,tau)*zoo(5)%q_p_2_n + &
-                    bact(1)%q_p_2_n*cobalt%p_nbact(i,j,k,tau))*grid_tmask(i,j,k)
+          pre_totc(i,j,k) = (cobalt%p_dic(i,j,k,tau) + &
+                     cobalt%p_cadet_arag(i,j,k,tau)        + cobalt%p_cadet_calc(i,j,k,tau) + &
+                     cobalt%c_2_n*(cobalt%p_ndi(i,j,k,tau) + cobalt%p_nlg(i,j,k,tau) + &
+                     cobalt%p_nmd(i,j,k,tau)         + &
+                     cobalt%p_nsm(i,j,k,tau)         + cobalt%p_nbact(i,j,k,tau) + &
+                     cobalt%p_ldon(i,j,k,tau)        + cobalt%p_sldon(i,j,k,tau) + &
+                     cobalt%p_srdon(i,j,k,tau)       + cobalt%p_ndet(i,j,k,tau) + &
+                     cobalt%p_ndet_fast(i,j,k,tau)   + &
+                     cobalt%p_nsmz(i,j,k,tau)        + cobalt%p_nmdz(i,j,k,tau) + &
+                     cobalt%p_nlgz(i,j,k,tau)))*grid_tmask(i,j,k)
+          if (do_dvm) then
+          pre_totc(i,j,k) = pre_totc(i,j,k) + &
+                     cobalt%c_2_n*(cobalt%p_nvmmdz(i,j,k,tau) + &
+                     cobalt%p_nvmmdz_gut(i,j,k,tau)  + cobalt%p_nvmmdz_met(i,j,k,tau) + &
+                     cobalt%p_nvmlgz(i,j,k,tau)      + cobalt%p_nvmlgz_gut(i,j,k,tau) + &
+                     cobalt%p_nvmlgz_met(i,j,k,tau))*grid_tmask(i,j,k)
+          endif
+          pre_totp(i,j,k) = (cobalt%p_po4(i,j,k,tau) + cobalt%p_pdi(i,j,k,tau) + &
+                     cobalt%p_plg(i,j,k,tau) + cobalt%p_pmd(i,j,k,tau) + cobalt%p_psm(i,j,k,tau) + &
+                     cobalt%p_ldop(i,j,k,tau) + cobalt%p_sldop(i,j,k,tau) + &
+                     cobalt%p_srdop(i,j,k,tau) + cobalt%p_pdet(i,j,k,tau) + &
+                     cobalt%p_pdet_fast(i,j,k,tau) + &
+                     cobalt%p_nsmz(i,j,k,tau)*zoo(1)%q_p_2_n + &
+                     cobalt%p_nmdz(i,j,k,tau)*zoo(2)%q_p_2_n + &
+                     cobalt%p_nlgz(i,j,k,tau)*zoo(3)%q_p_2_n + &
+                     bact(1)%q_p_2_n*cobalt%p_nbact(i,j,k,tau))*grid_tmask(i,j,k)
+          if (do_dvm) then
+          pre_totp(i,j,k) = pre_totp(i,j,k) + (cobalt%p_nvmmdz(i,j,k,tau)*zoo(4)%q_p_2_n + &
+                     cobalt%p_nvmlgz(i,j,k,tau)*zoo(5)%q_p_2_n + &
+                     cobalt%p_pvmmdz_gut(i,j,k,tau) + &
+                     cobalt%p_pvmlgz_gut(i,j,k,tau) + &
+                     cobalt%p_nvmmdz_met(i,j,k,tau)*zoo(4)%q_p_2_n + &
+                     cobalt%p_nvmlgz_met(i,j,k,tau)*zoo(5)%q_p_2_n)*grid_tmask(i,j,k)
+          endif
          net_srcp(i,j,k) = cobalt%jpo4_iceberg(i,j,k)*dt*grid_tmask(i,j,k)
-         pre_totfe(i,j,k) = (cobalt%p_fed(i,j,k,tau) + cobalt%p_fedi(i,j,k,tau) + &
-                    cobalt%p_fevmmdz_gut(i,j,k,tau) + cobalt%p_fevmlgz_gut(i,j,k,tau) + &
-                    cobalt%p_felg(i,j,k,tau) + cobalt%p_femd(i,j,k,tau) + cobalt%p_fesm(i,j,k,tau) + &
-                    cobalt%p_fedet(i,j,k,tau))*grid_tmask(i,j,k)
-         net_srcfe(i,j,k) = (cobalt%jfe_coast(i,j,k)+cobalt%jfe_iceberg(i,j,k))*dt*grid_tmask(i,j,k)
-         pre_totsi(i,j,k) = (cobalt%p_sio4(i,j,k,tau) + cobalt%p_silg(i,j,k,tau) + &
-                    cobalt%p_sivmmdz_gut(i,j,k,tau) + cobalt%p_sivmlgz_gut(i,j,k,tau) + &
-                    cobalt%p_simd(i,j,k,tau) + cobalt%p_sidet(i,j,k,tau))*grid_tmask(i,j,k)
+          pre_totfe(i,j,k) = (cobalt%p_fed(i,j,k,tau) + cobalt%p_fedi(i,j,k,tau) + &
+                     cobalt%p_felg(i,j,k,tau) + cobalt%p_femd(i,j,k,tau) + cobalt%p_fesm(i,j,k,tau) + &
+                     cobalt%p_fedet(i,j,k,tau))*grid_tmask(i,j,k)
+          if (do_dvm) then
+          pre_totfe(i,j,k) = pre_totfe(i,j,k) + (cobalt%p_fevmmdz_gut(i,j,k,tau) + &
+                     cobalt%p_fevmlgz_gut(i,j,k,tau))*grid_tmask(i,j,k)
+          endif
+          net_srcfe(i,j,k) = (cobalt%jfe_coast(i,j,k)+cobalt%jfe_iceberg(i,j,k))*dt*grid_tmask(i,j,k)
+          pre_totsi(i,j,k) = (cobalt%p_sio4(i,j,k,tau) + cobalt%p_silg(i,j,k,tau) + &
+                     cobalt%p_simd(i,j,k,tau) + cobalt%p_sidet(i,j,k,tau))*grid_tmask(i,j,k)
+          if (do_dvm) then
+          pre_totsi(i,j,k) = pre_totsi(i,j,k) + (cobalt%p_sivmmdz_gut(i,j,k,tau) + &
+                     cobalt%p_sivmlgz_gut(i,j,k,tau))*grid_tmask(i,j,k)
+          endif
     enddo; enddo ; enddo  !} i,j,k
 
     call mpp_clock_end(id_clock_source_sink_loop1)
@@ -6517,50 +6455,52 @@ contains
                              zoo(3)%jhploss_n(i,j,k)
        cobalt%p_nlgz(i,j,k,tau) = cobalt%p_nlgz(i,j,k,tau) + cobalt%jnlgz(i,j,k)*dt*grid_tmask(i,j,k)
 
-       !
-       ! Vertically migrating medium zooplankton
-       !
-       cobalt%jnvmmdz(i,j,k) = zoo(4)%jprod_n(i,j,k) - zoo(4)%jzloss_n(i,j,k) - &
-                             zoo(4)%jhploss_n(i,j,k)
-       cobalt%p_nvmmdz(i,j,k,tau) = cobalt%p_nvmmdz(i,j,k,tau) + cobalt%jnvmmdz(i,j,k)*dt*grid_tmask(i,j,k)
-       
-       cobalt%jnvmmdz_gut(i,j,k) = zoo(4)%jprod_gut_n(i,j,k) - zoo(4)%jclear_gut_n(i,j,k)                               ! mpoupon
-       cobalt%p_nvmmdz_gut(i,j,k,tau) = cobalt%p_nvmmdz_gut(i,j,k,tau) + cobalt%jnvmmdz_gut(i,j,k)*dt*grid_tmask(i,j,k) ! mpoupon
-       
-       cobalt%jpvmmdz_gut(i,j,k) = zoo(4)%jprod_gut_p(i,j,k) - zoo(4)%jclear_gut_p(i,j,k)                               ! mpoupon
-       cobalt%p_pvmmdz_gut(i,j,k,tau) = cobalt%p_pvmmdz_gut(i,j,k,tau) + cobalt%jpvmmdz_gut(i,j,k)*dt*grid_tmask(i,j,k) ! mpoupon
-       
-       cobalt%jfevmmdz_gut(i,j,k) = zoo(4)%jprod_gut_fe(i,j,k) - zoo(4)%jclear_gut_fe(i,j,k)                               ! mpoupon
-       cobalt%p_fevmmdz_gut(i,j,k,tau) = cobalt%p_fevmmdz_gut(i,j,k,tau) + cobalt%jfevmmdz_gut(i,j,k)*dt*grid_tmask(i,j,k) ! mpoupon
+     if (do_dvm) then
+        !
+        ! Vertically migrating medium zooplankton
+        !
+        cobalt%jnvmmdz(i,j,k) = zoo(4)%jprod_n(i,j,k) - zoo(4)%jzloss_n(i,j,k) - &
+                              zoo(4)%jhploss_n(i,j,k)
+        cobalt%p_nvmmdz(i,j,k,tau) = cobalt%p_nvmmdz(i,j,k,tau) + cobalt%jnvmmdz(i,j,k)*dt*grid_tmask(i,j,k)
+        
+        cobalt%jnvmmdz_gut(i,j,k) = zoo(4)%jprod_gut_n(i,j,k) - zoo(4)%jclear_gut_n(i,j,k)                               ! mpoupon
+        cobalt%p_nvmmdz_gut(i,j,k,tau) = cobalt%p_nvmmdz_gut(i,j,k,tau) + cobalt%jnvmmdz_gut(i,j,k)*dt*grid_tmask(i,j,k) ! mpoupon
+        
+        cobalt%jpvmmdz_gut(i,j,k) = zoo(4)%jprod_gut_p(i,j,k) - zoo(4)%jclear_gut_p(i,j,k)                               ! mpoupon
+        cobalt%p_pvmmdz_gut(i,j,k,tau) = cobalt%p_pvmmdz_gut(i,j,k,tau) + cobalt%jpvmmdz_gut(i,j,k)*dt*grid_tmask(i,j,k) ! mpoupon
+        
+        cobalt%jfevmmdz_gut(i,j,k) = zoo(4)%jprod_gut_fe(i,j,k) - zoo(4)%jclear_gut_fe(i,j,k)                               ! mpoupon
+        cobalt%p_fevmmdz_gut(i,j,k,tau) = cobalt%p_fevmmdz_gut(i,j,k,tau) + cobalt%jfevmmdz_gut(i,j,k)*dt*grid_tmask(i,j,k) ! mpoupon
+    
+        cobalt%jsivmmdz_gut(i,j,k) = zoo(4)%jprod_gut_si(i,j,k) - zoo(4)%jclear_gut_si(i,j,k)                               ! mpoupon
+        cobalt%p_sivmmdz_gut(i,j,k,tau) = cobalt%p_sivmmdz_gut(i,j,k,tau) + cobalt%jsivmmdz_gut(i,j,k)*dt*grid_tmask(i,j,k) ! mpoupon
+
+        cobalt%jnvmmdz_met(i,j,k) = zoo(4)%jprod_met_n(i,j,k) - zoo(4)%jclear_met_n(i,j,k)                               ! mpoupon
+        cobalt%p_nvmmdz_met(i,j,k,tau) = cobalt%p_nvmmdz_met(i,j,k,tau) + cobalt%jnvmmdz_met(i,j,k)*dt*grid_tmask(i,j,k) ! mpoupon
+
+        !
+        ! Vertically migrating large zooplankton
+        !
+        cobalt%jnvmlgz(i,j,k) = zoo(5)%jprod_n(i,j,k) - zoo(5)%jzloss_n(i,j,k) - &
+                              zoo(5)%jhploss_n(i,j,k)
+        cobalt%p_nvmlgz(i,j,k,tau) = cobalt%p_nvmlgz(i,j,k,tau) + cobalt%jnvmlgz(i,j,k)*dt*grid_tmask(i,j,k)
+        
+        cobalt%jnvmlgz_gut(i,j,k) =  zoo(5)%jprod_gut_n(i,j,k) - zoo(5)%jclear_gut_n(i,j,k)                              ! mpoupon
+        cobalt%p_nvmlgz_gut(i,j,k,tau) = cobalt%p_nvmlgz_gut(i,j,k,tau) + cobalt%jnvmlgz_gut(i,j,k)*dt*grid_tmask(i,j,k) ! mpoupon
    
-       cobalt%jsivmmdz_gut(i,j,k) = zoo(4)%jprod_gut_si(i,j,k) - zoo(4)%jclear_gut_si(i,j,k)                               ! mpoupon
-       cobalt%p_sivmmdz_gut(i,j,k,tau) = cobalt%p_sivmmdz_gut(i,j,k,tau) + cobalt%jsivmmdz_gut(i,j,k)*dt*grid_tmask(i,j,k) ! mpoupon
+        cobalt%jpvmlgz_gut(i,j,k) =  zoo(5)%jprod_gut_p(i,j,k) - zoo(5)%jclear_gut_p(i,j,k)                              ! mpoupon
+        cobalt%p_pvmlgz_gut(i,j,k,tau) = cobalt%p_pvmlgz_gut(i,j,k,tau) + cobalt%jpvmlgz_gut(i,j,k)*dt*grid_tmask(i,j,k) ! mpoupon
+        
+        cobalt%jfevmlgz_gut(i,j,k) =  zoo(5)%jprod_gut_fe(i,j,k) - zoo(5)%jclear_gut_fe(i,j,k)                              ! mpoupon
+        cobalt%p_fevmlgz_gut(i,j,k,tau) = cobalt%p_fevmlgz_gut(i,j,k,tau) + cobalt%jfevmlgz_gut(i,j,k)*dt*grid_tmask(i,j,k) ! mpoupon
+        
+        cobalt%jsivmlgz_gut(i,j,k) =  zoo(5)%jprod_gut_si(i,j,k) - zoo(5)%jclear_gut_si(i,j,k)                              ! mpoupon
+        cobalt%p_sivmlgz_gut(i,j,k,tau) = cobalt%p_sivmlgz_gut(i,j,k,tau) + cobalt%jsivmlgz_gut(i,j,k)*dt*grid_tmask(i,j,k) ! mpoupon
 
-       cobalt%jnvmmdz_met(i,j,k) = zoo(4)%jprod_met_n(i,j,k) - zoo(4)%jclear_met_n(i,j,k)                               ! mpoupon
-       cobalt%p_nvmmdz_met(i,j,k,tau) = cobalt%p_nvmmdz_met(i,j,k,tau) + cobalt%jnvmmdz_met(i,j,k)*dt*grid_tmask(i,j,k) ! mpoupon
-
-       !
-       ! Vertically migrating large zooplankton
-       !
-       cobalt%jnvmlgz(i,j,k) = zoo(5)%jprod_n(i,j,k) - zoo(5)%jzloss_n(i,j,k) - &
-                             zoo(5)%jhploss_n(i,j,k)
-       cobalt%p_nvmlgz(i,j,k,tau) = cobalt%p_nvmlgz(i,j,k,tau) + cobalt%jnvmlgz(i,j,k)*dt*grid_tmask(i,j,k)
-       
-       cobalt%jnvmlgz_gut(i,j,k) =  zoo(5)%jprod_gut_n(i,j,k) - zoo(5)%jclear_gut_n(i,j,k)                              ! mpoupon
-       cobalt%p_nvmlgz_gut(i,j,k,tau) = cobalt%p_nvmlgz_gut(i,j,k,tau) + cobalt%jnvmlgz_gut(i,j,k)*dt*grid_tmask(i,j,k) ! mpoupon
-  
-       cobalt%jpvmlgz_gut(i,j,k) =  zoo(5)%jprod_gut_p(i,j,k) - zoo(5)%jclear_gut_p(i,j,k)                              ! mpoupon
-       cobalt%p_pvmlgz_gut(i,j,k,tau) = cobalt%p_pvmlgz_gut(i,j,k,tau) + cobalt%jpvmlgz_gut(i,j,k)*dt*grid_tmask(i,j,k) ! mpoupon
-       
-       cobalt%jfevmlgz_gut(i,j,k) =  zoo(5)%jprod_gut_fe(i,j,k) - zoo(5)%jclear_gut_fe(i,j,k)                              ! mpoupon
-       cobalt%p_fevmlgz_gut(i,j,k,tau) = cobalt%p_fevmlgz_gut(i,j,k,tau) + cobalt%jfevmlgz_gut(i,j,k)*dt*grid_tmask(i,j,k) ! mpoupon
-       
-       cobalt%jsivmlgz_gut(i,j,k) =  zoo(5)%jprod_gut_si(i,j,k) - zoo(5)%jclear_gut_si(i,j,k)                              ! mpoupon
-       cobalt%p_sivmlgz_gut(i,j,k,tau) = cobalt%p_sivmlgz_gut(i,j,k,tau) + cobalt%jsivmlgz_gut(i,j,k)*dt*grid_tmask(i,j,k) ! mpoupon
-
-       cobalt%jnvmlgz_met(i,j,k) =  zoo(5)%jprod_met_n(i,j,k) - zoo(5)%jclear_met_n(i,j,k)                              ! mpoupon
-       cobalt%p_nvmlgz_met(i,j,k,tau) = cobalt%p_nvmlgz_met(i,j,k,tau) + cobalt%jnvmlgz_met(i,j,k)*dt*grid_tmask(i,j,k) ! mpoupon
-    enddo; enddo ; enddo  !} i,j,k
+        cobalt%jnvmlgz_met(i,j,k) =  zoo(5)%jprod_met_n(i,j,k) - zoo(5)%jclear_met_n(i,j,k)                              ! mpoupon
+        cobalt%p_nvmlgz_met(i,j,k,tau) = cobalt%p_nvmlgz_met(i,j,k,tau) + cobalt%jnvmlgz_met(i,j,k)*dt*grid_tmask(i,j,k) ! mpoupon
+     endif ! do_dvm
+     enddo; enddo ; enddo  !} i,j,k
 !
     call mpp_clock_end(id_clock_source_sink_loop4)
     !
@@ -6906,76 +6846,91 @@ contains
     allocate(post_totfe(isc:iec,jsc:jec,1:nk))
     do k = 1, nk ; do j = jsc, jec ; do i = isc, iec  !{
       if (dzt(i,j,k).gt.cobalt%min_thickness) then
-         post_totn(i,j,k) = (cobalt%p_no3(i,j,k,tau) + cobalt%p_nh4(i,j,k,tau) + &
-                    cobalt%p_ndi(i,j,k,tau) + cobalt%p_nlg(i,j,k,tau) + cobalt%p_nmd(i,j,k,tau) + &
-                    cobalt%p_nsm(i,j,k,tau) + cobalt%p_nbact(i,j,k,tau) + &
-                    cobalt%p_ldon(i,j,k,tau) + cobalt%p_sldon(i,j,k,tau) + &
-                    cobalt%p_srdon(i,j,k,tau) + cobalt%p_ndet(i,j,k,tau) + &
-					     cobalt%p_ndet_fast(i,j,k,tau) + &
-                    cobalt%p_nsmz(i,j,k,tau) + cobalt%p_nmdz(i,j,k,tau) + &
-                    cobalt%p_nlgz(i,j,k,tau) + cobalt%p_nvmmdz(i,j,k,tau) + &
-                    cobalt%p_nvmmdz_gut(i,j,k,tau) + cobalt%p_nvmmdz_met(i,j,k,tau) + &
-                    cobalt%p_nvmlgz(i,j,k,tau)  + cobalt%p_nvmlgz_gut(i,j,k,tau) + &
-                    cobalt%p_nvmlgz_met(i,j,k,tau))*grid_tmask(i,j,k)
+          post_totn(i,j,k) = (cobalt%p_no3(i,j,k,tau) + cobalt%p_nh4(i,j,k,tau) + &
+                     cobalt%p_ndi(i,j,k,tau) + cobalt%p_nlg(i,j,k,tau) + cobalt%p_nmd(i,j,k,tau) + &
+                     cobalt%p_nsm(i,j,k,tau) + cobalt%p_nbact(i,j,k,tau) + &
+                     cobalt%p_ldon(i,j,k,tau) + cobalt%p_sldon(i,j,k,tau) + &
+                     cobalt%p_srdon(i,j,k,tau) + cobalt%p_ndet(i,j,k,tau) + &
+                     cobalt%p_ndet_fast(i,j,k,tau) + &
+                     cobalt%p_nsmz(i,j,k,tau) + cobalt%p_nmdz(i,j,k,tau) + &
+                     cobalt%p_nlgz(i,j,k,tau))*grid_tmask(i,j,k)
+          if (do_dvm) then
+          post_totn(i,j,k) = post_totn(i,j,k) + (cobalt%p_nvmmdz(i,j,k,tau) + &
+                     cobalt%p_nvmmdz_gut(i,j,k,tau) + cobalt%p_nvmmdz_met(i,j,k,tau) + &
+                     cobalt%p_nvmlgz(i,j,k,tau)  + cobalt%p_nvmlgz_gut(i,j,k,tau) + &
+                     cobalt%p_nvmlgz_met(i,j,k,tau))*grid_tmask(i,j,k)
+          endif
          imbal = (post_totn(i,j,k) - pre_totn(i,j,k) - net_srcn(i,j,k))*86400.0/dt*1.03e6
          if (abs(imbal).gt.imbalance_tolerance) then
            call mpp_error(FATAL,&
            '==>biological source/sink imbalance (generic_COBALT_update_from_source): Nitrogen')
          endif
 
-         post_totc(i,j,k) = (cobalt%p_dic(i,j,k,tau) + &
-                    cobalt%p_cadet_arag(i,j,k,tau) + cobalt%p_cadet_calc(i,j,k,tau) + &
-                    cobalt%c_2_n*(cobalt%p_ndi(i,j,k,tau) + cobalt%p_nlg(i,j,k,tau) + &
-                    cobalt%p_nmd(i,j,k,tau) + cobalt%p_nsm(i,j,k,tau) + cobalt%p_nbact(i,j,k,tau) + &
-                    cobalt%p_ldon(i,j,k,tau) + cobalt%p_sldon(i,j,k,tau) + &
-                    cobalt%p_srdon(i,j,k,tau) + cobalt%p_ndet(i,j,k,tau) + &
-					     cobalt%p_ndet_fast(i,j,k,tau) + &
-                    cobalt%p_nsmz(i,j,k,tau) + cobalt%p_nmdz(i,j,k,tau) + &
-                    cobalt%p_nlgz(i,j,k,tau) + cobalt%p_nvmmdz(i,j,k,tau) + &
-                    cobalt%p_nvmmdz_gut(i,j,k,tau) + cobalt%p_nvmmdz_met(i,j,k,tau) + &
-                    cobalt%p_nvmlgz(i,j,k,tau)  + cobalt%p_nvmlgz_gut(i,j,k,tau) + &
-                    cobalt%p_nvmlgz_met(i,j,k,tau)))*grid_tmask(i,j,k)
+          post_totc(i,j,k) = (cobalt%p_dic(i,j,k,tau) + &
+                     cobalt%p_cadet_arag(i,j,k,tau) + cobalt%p_cadet_calc(i,j,k,tau) + &
+                     cobalt%c_2_n*(cobalt%p_ndi(i,j,k,tau) + cobalt%p_nlg(i,j,k,tau) + &
+                     cobalt%p_nmd(i,j,k,tau) + cobalt%p_nsm(i,j,k,tau) + cobalt%p_nbact(i,j,k,tau) + &
+                     cobalt%p_ldon(i,j,k,tau) + cobalt%p_sldon(i,j,k,tau) + &
+                     cobalt%p_srdon(i,j,k,tau) + cobalt%p_ndet(i,j,k,tau) + &
+                     cobalt%p_ndet_fast(i,j,k,tau) + &
+                     cobalt%p_nsmz(i,j,k,tau) + cobalt%p_nmdz(i,j,k,tau) + &
+                     cobalt%p_nlgz(i,j,k,tau)))*grid_tmask(i,j,k)
+          if (do_dvm) then
+          post_totc(i,j,k) = post_totc(i,j,k) + &
+                     cobalt%c_2_n*(cobalt%p_nvmmdz(i,j,k,tau) + &
+                     cobalt%p_nvmmdz_gut(i,j,k,tau) + cobalt%p_nvmmdz_met(i,j,k,tau) + &
+                     cobalt%p_nvmlgz(i,j,k,tau)  + cobalt%p_nvmlgz_gut(i,j,k,tau) + &
+                     cobalt%p_nvmlgz_met(i,j,k,tau))*grid_tmask(i,j,k)
+          endif
         imbal = (post_totc(i,j,k) - pre_totc(i,j,k) - net_srcc(i,j,k))*86400.0/dt*1.03e6
          if (abs(imbal).gt.imbalance_tolerance) then
            call mpp_error(FATAL,&
            '==>biological source/sink imbalance (generic_COBALT_update_from_source): Carbon')
          endif
 
-         post_totp(i,j,k) = (cobalt%p_po4(i,j,k,tau) + cobalt%p_pdi(i,j,k,tau) + &
-                    cobalt%p_plg(i,j,k,tau) + cobalt%p_pmd(i,j,k,tau) + cobalt%p_psm(i,j,k,tau) + &
-                    cobalt%p_ldop(i,j,k,tau) + cobalt%p_sldop(i,j,k,tau) + &
-                    cobalt%p_srdop(i,j,k,tau) + cobalt%p_pdet(i,j,k,tau) + &
-					     cobalt%p_pdet_fast(i,j,k,tau) + &
-                    cobalt%p_nsmz(i,j,k,tau)*zoo(1)%q_p_2_n + &
-                    cobalt%p_nmdz(i,j,k,tau)*zoo(2)%q_p_2_n + &
-                    cobalt%p_nlgz(i,j,k,tau)*zoo(3)%q_p_2_n  + &
-                    cobalt%p_nvmmdz(i,j,k,tau)*zoo(4)%q_p_2_n + &
-                    cobalt%p_nvmlgz(i,j,k,tau)*zoo(5)%q_p_2_n + &
-                    cobalt%p_pvmmdz_gut(i,j,k,tau) + &
-                    cobalt%p_pvmlgz_gut(i,j,k,tau) + &
-                    cobalt%p_nvmmdz_met(i,j,k,tau)*zoo(4)%q_p_2_n + &
-                    cobalt%p_nvmlgz_met(i,j,k,tau)*zoo(5)%q_p_2_n + &
-                    bact(1)%q_p_2_n*cobalt%p_nbact(i,j,k,tau))*grid_tmask(i,j,k)
+          post_totp(i,j,k) = (cobalt%p_po4(i,j,k,tau) + cobalt%p_pdi(i,j,k,tau) + &
+                     cobalt%p_plg(i,j,k,tau) + cobalt%p_pmd(i,j,k,tau) + cobalt%p_psm(i,j,k,tau) + &
+                     cobalt%p_ldop(i,j,k,tau) + cobalt%p_sldop(i,j,k,tau) + &
+                     cobalt%p_srdop(i,j,k,tau) + cobalt%p_pdet(i,j,k,tau) + &
+                     cobalt%p_pdet_fast(i,j,k,tau) + &
+                     cobalt%p_nsmz(i,j,k,tau)*zoo(1)%q_p_2_n + &
+                     cobalt%p_nmdz(i,j,k,tau)*zoo(2)%q_p_2_n + &
+                     cobalt%p_nlgz(i,j,k,tau)*zoo(3)%q_p_2_n  + &
+                     bact(1)%q_p_2_n*cobalt%p_nbact(i,j,k,tau))*grid_tmask(i,j,k)
+          if (do_dvm) then
+          post_totp(i,j,k) = post_totp(i,j,k) + (cobalt%p_nvmmdz(i,j,k,tau)*zoo(4)%q_p_2_n + &
+                     cobalt%p_nvmlgz(i,j,k,tau)*zoo(5)%q_p_2_n + &
+                     cobalt%p_pvmmdz_gut(i,j,k,tau) + &
+                     cobalt%p_pvmlgz_gut(i,j,k,tau) + &
+                     cobalt%p_nvmmdz_met(i,j,k,tau)*zoo(4)%q_p_2_n + &
+                     cobalt%p_nvmlgz_met(i,j,k,tau)*zoo(5)%q_p_2_n)*grid_tmask(i,j,k)
+          endif
          imbal = (post_totp(i,j,k) - pre_totp(i,j,k) - net_srcp(i,j,k))*86400.0/dt*1.03e6
          if (abs(imbal).gt.imbalance_tolerance) then
            call mpp_error(FATAL,&
            '==>biological source/sink imbalance (generic_COBALT_update_from_source): Phosphorus')
          endif
 
-         post_totfe(i,j,k) = (cobalt%p_fed(i,j,k,tau) + cobalt%p_fedi(i,j,k,tau) + &
-                    cobalt%p_felg(i,j,k,tau) + cobalt%p_femd(i,j,k,tau) + cobalt%p_fesm(i,j,k,tau) + &
-                    cobalt%p_fevmmdz_gut(i,j,k,tau) + cobalt%p_fevmlgz_gut(i,j,k,tau) + &
-                    cobalt%p_fedet(i,j,k,tau))*grid_tmask(i,j,k)
+          post_totfe(i,j,k) = (cobalt%p_fed(i,j,k,tau) + cobalt%p_fedi(i,j,k,tau) + &
+                     cobalt%p_felg(i,j,k,tau) + cobalt%p_femd(i,j,k,tau) + cobalt%p_fesm(i,j,k,tau) + &
+                     cobalt%p_fedet(i,j,k,tau))*grid_tmask(i,j,k)
+          if (do_dvm) then
+          post_totfe(i,j,k) = post_totfe(i,j,k) + (cobalt%p_fevmmdz_gut(i,j,k,tau) + &
+                     cobalt%p_fevmlgz_gut(i,j,k,tau))*grid_tmask(i,j,k)
+          endif
          imbal = (post_totfe(i,j,k) - pre_totfe(i,j,k) - net_srcfe(i,j,k))*86400.0/dt*1.03e6
          if (abs(imbal).gt.imbalance_tolerance) then
            call mpp_error(FATAL,&
            '==>biological source/sink imbalance (generic_COBALT_update_from_source): Iron')
          endif
 
-         post_totsi(i,j,k) = (cobalt%p_sio4(i,j,k,tau) + cobalt%p_silg(i,j,k,tau) + &
-                    cobalt%p_sivmmdz_gut(i,j,k,tau) + cobalt%p_sivmlgz_gut(i,j,k,tau) + &
-                    cobalt%p_simd(i,j,k,tau) + cobalt%p_sidet(i,j,k,tau))*grid_tmask(i,j,k)
-         imbal = (post_totsi(i,j,k) - pre_totsi(i,j,k))*86400.0/dt*1.03e6
+          post_totsi(i,j,k) = (cobalt%p_sio4(i,j,k,tau) + cobalt%p_silg(i,j,k,tau) + &
+                     cobalt%p_simd(i,j,k,tau) + cobalt%p_sidet(i,j,k,tau))*grid_tmask(i,j,k)
+          if (do_dvm) then
+          post_totsi(i,j,k) = post_totsi(i,j,k) + (cobalt%p_sivmmdz_gut(i,j,k,tau) + &
+                     cobalt%p_sivmlgz_gut(i,j,k,tau))*grid_tmask(i,j,k)
+          endif
+          imbal = (post_totsi(i,j,k) - pre_totsi(i,j,k))*86400.0/dt*1.03e6
          if (abs(imbal).gt.imbalance_tolerance) then
            call mpp_error(FATAL,&
            '==>biological source/sink imbalance (generic_COBALT_update_from_source): Silica')
@@ -7137,52 +7092,73 @@ contains
     ! The carbon layer integral (organic + inorganic).  Note that this can be calculated with or without a constant
     ! background level of recalcitrant dissolved organic carbon by setting cobalt%doc_background.  This is included
     ! at a level of 40 micromoles kg-1 by default.
-    cobalt%tot_layer_int_c(:,:,:) = (cobalt%p_dic(:,:,:,tau) + cobalt%doc_background + cobalt%p_cadet_arag(:,:,:,tau) +&
-         cobalt%p_cadet_calc(:,:,:,tau) + cobalt%c_2_n * (cobalt%p_ndi(:,:,:,tau) + cobalt%p_nlg(:,:,:,tau) + &
-         cobalt%p_nmd(:,:,:,tau) + cobalt%p_nsm(:,:,:,tau) + cobalt%p_nbact(:,:,:,tau) + cobalt%p_ldon(:,:,:,tau) + &
-         cobalt%p_sldon(:,:,:,tau) + cobalt%p_srdon(:,:,:,tau) + cobalt%p_ndet(:,:,:,tau) +  cobalt%p_ndet_fast(:,:,:,tau) + &
-         cobalt%p_nsmz(:,:,:,tau) + cobalt%p_nmdz(:,:,:,tau) + cobalt%p_nlgz(:,:,:,tau) + cobalt%p_nvmmdz(:,:,:,tau) + cobalt%p_nvmlgz(:,:,:,tau) + &
-         cobalt%p_nvmmdz_met(:,:,:,tau) + cobalt%p_nvmlgz_met(:,:,:,tau) + cobalt%p_nvmmdz_gut(:,:,:,tau) + &
-         cobalt%p_nvmlgz_gut(:,:,:,tau))) * rho_dzt(:,:,:)
+     cobalt%tot_layer_int_c(:,:,:) = (cobalt%p_dic(:,:,:,tau) + cobalt%doc_background + cobalt%p_cadet_arag(:,:,:,tau) +&
+          cobalt%p_cadet_calc(:,:,:,tau) + cobalt%c_2_n * (cobalt%p_ndi(:,:,:,tau) + cobalt%p_nlg(:,:,:,tau) + &
+          cobalt%p_nmd(:,:,:,tau) + cobalt%p_nsm(:,:,:,tau) + cobalt%p_nbact(:,:,:,tau) + cobalt%p_ldon(:,:,:,tau) + &
+          cobalt%p_sldon(:,:,:,tau) + cobalt%p_srdon(:,:,:,tau) + cobalt%p_ndet(:,:,:,tau) +  cobalt%p_ndet_fast(:,:,:,tau) + &
+          cobalt%p_nsmz(:,:,:,tau) + cobalt%p_nmdz(:,:,:,tau) + cobalt%p_nlgz(:,:,:,tau))) * rho_dzt(:,:,:)
+     if (do_dvm) then
+     cobalt%tot_layer_int_c(:,:,:) = cobalt%tot_layer_int_c(:,:,:) + &
+          cobalt%c_2_n * (cobalt%p_nvmmdz(:,:,:,tau) + cobalt%p_nvmlgz(:,:,:,tau) + &
+          cobalt%p_nvmmdz_met(:,:,:,tau) + cobalt%p_nvmlgz_met(:,:,:,tau) + cobalt%p_nvmmdz_gut(:,:,:,tau) + &
+          cobalt%p_nvmlgz_gut(:,:,:,tau)) * rho_dzt(:,:,:)
+     endif
 
     ! dissolved organic component also includes an optional background doc
     cobalt%tot_layer_int_doc(:,:,:) = (cobalt%c_2_n * (cobalt%p_ldon(:,:,:,tau) + cobalt%p_sldon(:,:,:,tau) + &
          cobalt%p_srdon(:,:,:,tau)) + cobalt%doc_background) * rho_dzt(:,:,:)
 
-    cobalt%tot_layer_int_poc(:,:,:) = (cobalt%p_ndi(:,:,:,tau) + cobalt%p_nlg(:,:,:,tau) + cobalt%p_nmd(:,:,:,tau) + &
-         cobalt%p_nsm(:,:,:,tau) + cobalt%p_nbact(:,:,:,tau) + cobalt%p_ndet(:,:,:,tau) + cobalt%p_ndet_fast(:,:,:,tau) + &
-         cobalt%p_nsmz(:,:,:,tau) + cobalt%p_nmdz(:,:,:,tau) + cobalt%p_nlgz(:,:,:,tau) + &
-         cobalt%p_nvmmdz(:,:,:,tau) + cobalt%p_nvmlgz(:,:,:,tau) + cobalt%p_nvmmdz_met(:,:,:,tau) + &
-         cobalt%p_nvmlgz_met(:,:,:,tau) + cobalt%p_nvmmdz_gut(:,:,:,tau) + cobalt%p_nvmlgz_gut(:,:,:,tau))*cobalt%c_2_n*rho_dzt(:,:,:)
+     cobalt%tot_layer_int_poc(:,:,:) = (cobalt%p_ndi(:,:,:,tau) + cobalt%p_nlg(:,:,:,tau) + cobalt%p_nmd(:,:,:,tau) + &
+          cobalt%p_nsm(:,:,:,tau) + cobalt%p_nbact(:,:,:,tau) + cobalt%p_ndet(:,:,:,tau) + cobalt%p_ndet_fast(:,:,:,tau) + &
+          cobalt%p_nsmz(:,:,:,tau) + cobalt%p_nmdz(:,:,:,tau) + cobalt%p_nlgz(:,:,:,tau))*cobalt%c_2_n*rho_dzt(:,:,:)
+     if (do_dvm) then
+     cobalt%tot_layer_int_poc(:,:,:) = cobalt%tot_layer_int_poc(:,:,:) + &
+          (cobalt%p_nvmmdz(:,:,:,tau) + cobalt%p_nvmlgz(:,:,:,tau) + cobalt%p_nvmmdz_met(:,:,:,tau) + &
+          cobalt%p_nvmlgz_met(:,:,:,tau) + cobalt%p_nvmmdz_gut(:,:,:,tau) + cobalt%p_nvmlgz_gut(:,:,:,tau))*cobalt%c_2_n*rho_dzt(:,:,:)
+     endif
 
     cobalt%tot_layer_int_dic(:,:,:) = cobalt%p_dic(:,:,:,tau)*rho_dzt(:,:,:)
 
-    cobalt%tot_layer_int_fe(:,:,:) = (cobalt%p_fed(:,:,:,tau) + cobalt%p_fedi(:,:,:,tau) + cobalt%p_felg(:,:,:,tau) + &
-         cobalt%p_fevmmdz_gut(:,:,:,tau) + cobalt%p_fevmlgz_gut(:,:,:,tau) + &
-         cobalt%p_femd(:,:,:,tau) + cobalt%p_fesm(:,:,:,tau) + cobalt%p_fedet(:,:,:,tau)) * rho_dzt(:,:,:)
+     cobalt%tot_layer_int_fe(:,:,:) = (cobalt%p_fed(:,:,:,tau) + cobalt%p_fedi(:,:,:,tau) + cobalt%p_felg(:,:,:,tau) + &
+          cobalt%p_femd(:,:,:,tau) + cobalt%p_fesm(:,:,:,tau) + cobalt%p_fedet(:,:,:,tau)) * rho_dzt(:,:,:)
+     if (do_dvm) then
+     cobalt%tot_layer_int_fe(:,:,:) = cobalt%tot_layer_int_fe(:,:,:) + &
+          (cobalt%p_fevmmdz_gut(:,:,:,tau) + cobalt%p_fevmlgz_gut(:,:,:,tau)) * rho_dzt(:,:,:)
+     endif
 
-    cobalt%tot_layer_int_n(:,:,:) = (cobalt%p_no3(:,:,:,tau) + cobalt%p_nh4(:,:,:,tau) + cobalt%p_ndi(:,:,:,tau) + &
-         cobalt%p_nlg(:,:,:,tau) + cobalt%p_nmd(:,:,:,tau) + cobalt%p_nsm(:,:,:,tau) + cobalt%p_nbact(:,:,:,tau) + &
-         cobalt%p_ldon(:,:,:,tau) + cobalt%p_sldon(:,:,:,tau) + cobalt%p_srdon(:,:,:,tau) +  cobalt%p_ndet(:,:,:,tau) + &
-         cobalt%p_ndet_fast(:,:,:,tau) + cobalt%p_nsmz(:,:,:,tau) + cobalt%p_nmdz(:,:,:,tau) + cobalt%p_nlgz(:,:,:,tau) + &
-         cobalt%p_nvmmdz(:,:,:,tau) + cobalt%p_nvmlgz(:,:,:,tau) + cobalt%p_nvmmdz_met(:,:,:,tau) + &
-         cobalt%p_nvmlgz_met(:,:,:,tau) + cobalt%p_nvmmdz_gut(:,:,:,tau) + cobalt%p_nvmlgz_gut(:,:,:,tau)) * &
+     cobalt%tot_layer_int_n(:,:,:) = (cobalt%p_no3(:,:,:,tau) + cobalt%p_nh4(:,:,:,tau) + cobalt%p_ndi(:,:,:,tau) + &
+          cobalt%p_nlg(:,:,:,tau) + cobalt%p_nmd(:,:,:,tau) + cobalt%p_nsm(:,:,:,tau) + cobalt%p_nbact(:,:,:,tau) + &
+          cobalt%p_ldon(:,:,:,tau) + cobalt%p_sldon(:,:,:,tau) + cobalt%p_srdon(:,:,:,tau) +  cobalt%p_ndet(:,:,:,tau) + &
+          cobalt%p_ndet_fast(:,:,:,tau) + cobalt%p_nsmz(:,:,:,tau) + cobalt%p_nmdz(:,:,:,tau) + cobalt%p_nlgz(:,:,:,tau)) * &
 		 rho_dzt(:,:,:)
+     if (do_dvm) then
+     cobalt%tot_layer_int_n(:,:,:) = cobalt%tot_layer_int_n(:,:,:) + &
+          (cobalt%p_nvmmdz(:,:,:,tau) + cobalt%p_nvmlgz(:,:,:,tau) + cobalt%p_nvmmdz_met(:,:,:,tau) + &
+          cobalt%p_nvmlgz_met(:,:,:,tau) + cobalt%p_nvmmdz_gut(:,:,:,tau) + cobalt%p_nvmlgz_gut(:,:,:,tau)) * &
+		 rho_dzt(:,:,:)
+     endif
 
-    cobalt%tot_layer_int_p(:,:,:) = (cobalt%p_po4(:,:,:,tau) + cobalt%p_pdi(:,:,:,tau) + cobalt%p_plg(:,:,:,tau) + &
-         cobalt%p_pmd(:,:,:,tau) + cobalt%p_psm(:,:,:,tau) + cobalt%p_ldop(:,:,:,tau) + cobalt%p_sldop(:,:,:,tau) + &
-         cobalt%p_srdop(:,:,:,tau) + cobalt%p_pdet(:,:,:,tau) + cobalt%p_pdet_fast(:,:,:,tau) + &
-		   bact(1)%q_p_2_n*cobalt%p_nbact(:,:,:,tau) + &
-         zoo(1)%q_p_2_n*cobalt%p_nsmz(:,:,:,tau) + zoo(2)%q_p_2_n*cobalt%p_nmdz(:,:,:,tau) + &
-         zoo(3)%q_p_2_n*cobalt%p_nlgz(:,:,:,tau) + zoo(4)%q_p_2_n*cobalt%p_nvmmdz(:,:,:,tau) + &
-         zoo(5)%q_p_2_n*cobalt%p_nvmlgz(:,:,:,tau) + &
-         cobalt%p_pvmmdz_gut(:,:,:,tau) + cobalt%p_pvmlgz_gut(:,:,:,tau) + &
-         zoo(4)%q_p_2_n*cobalt%p_nvmmdz_met(:,:,:,tau) + &
-         zoo(5)%q_p_2_n*cobalt%p_nvmlgz_met(:,:,:,tau) )*rho_dzt(:,:,:)
+     cobalt%tot_layer_int_p(:,:,:) = (cobalt%p_po4(:,:,:,tau) + cobalt%p_pdi(:,:,:,tau) + cobalt%p_plg(:,:,:,tau) + &
+          cobalt%p_pmd(:,:,:,tau) + cobalt%p_psm(:,:,:,tau) + cobalt%p_ldop(:,:,:,tau) + cobalt%p_sldop(:,:,:,tau) + &
+          cobalt%p_srdop(:,:,:,tau) + cobalt%p_pdet(:,:,:,tau) + cobalt%p_pdet_fast(:,:,:,tau) + &
+           bact(1)%q_p_2_n*cobalt%p_nbact(:,:,:,tau) + &
+          zoo(1)%q_p_2_n*cobalt%p_nsmz(:,:,:,tau) + zoo(2)%q_p_2_n*cobalt%p_nmdz(:,:,:,tau) + &
+          zoo(3)%q_p_2_n*cobalt%p_nlgz(:,:,:,tau))*rho_dzt(:,:,:)
+     if (do_dvm) then
+     cobalt%tot_layer_int_p(:,:,:) = cobalt%tot_layer_int_p(:,:,:) + &
+          (zoo(4)%q_p_2_n*cobalt%p_nvmmdz(:,:,:,tau) + &
+          zoo(5)%q_p_2_n*cobalt%p_nvmlgz(:,:,:,tau) + &
+          cobalt%p_pvmmdz_gut(:,:,:,tau) + cobalt%p_pvmlgz_gut(:,:,:,tau) + &
+          zoo(4)%q_p_2_n*cobalt%p_nvmmdz_met(:,:,:,tau) + &
+          zoo(5)%q_p_2_n*cobalt%p_nvmlgz_met(:,:,:,tau))*rho_dzt(:,:,:)
+     endif
 
-    cobalt%tot_layer_int_si(:,:,:) = (cobalt%p_sio4(:,:,:,tau) + cobalt%p_silg(:,:,:,tau) + &
-         cobalt%p_simd(:,:,:,tau) + cobalt%p_sidet(:,:,:,tau) + cobalt%p_sivmmdz_gut(:,:,:,tau) + cobalt%p_sivmlgz_gut(:,:,:,tau) &
-         ) * rho_dzt(:,:,:)
+     cobalt%tot_layer_int_si(:,:,:) = (cobalt%p_sio4(:,:,:,tau) + cobalt%p_silg(:,:,:,tau) + &
+          cobalt%p_simd(:,:,:,tau) + cobalt%p_sidet(:,:,:,tau)) * rho_dzt(:,:,:)
+     if (do_dvm) then
+     cobalt%tot_layer_int_si(:,:,:) = cobalt%tot_layer_int_si(:,:,:) + &
+          (cobalt%p_sivmmdz_gut(:,:,:,tau) + cobalt%p_sivmlgz_gut(:,:,:,tau)) * rho_dzt(:,:,:)
+     endif
 
     cobalt%tot_layer_int_o2(:,:,:) = cobalt%p_o2(:,:,:,tau)*rho_dzt(:,:,:)
 
@@ -7851,6 +7827,15 @@ contains
 
 !==============================================================================================================
 
+    if (do_dvm) then
+    deallocate(vmmd_rho_dzt)        ; deallocate(vmlg_rho_dzt)
+    deallocate(vmmd_prey_rho_dzt)   ; deallocate(vmlg_prey_rho_dzt)
+    deallocate(vmmd_norm_cum)       ; deallocate(vmlg_norm_cum)
+    deallocate(vmmd_prey_norm_cum)  ; deallocate(vmlg_prey_norm_cum)
+    deallocate(vmmd_int)            ; deallocate(vmlg_int)
+    deallocate(vmmd_prey_int)       ; deallocate(vmlg_prey_int)
+    endif
+
     call mpp_clock_end(id_clock_cobalt_send_diagnostics)
 
   end subroutine generic_COBALT_update_from_source
@@ -8376,30 +8361,30 @@ contains
        allocate(zoo(n)%o2lim(isd:ied,jsd:jed,nk))        ; zoo(n)%o2lim           = 0.0
        allocate(zoo(n)%temp_lim(isd:ied,jsd:jed,nk))     ; zoo(n)%temp_lim        = 0.0
        allocate(zoo(n)%vmove(isd:ied,jsd:jed,nk))        ; zoo(n)%vmove           = 0.0 ! mpoupon
-       if ( n .eq. 4 .or. n .eq. 5) then
-         allocate(zoo(n)%lim_nut_n_ingestion(isd:ied,jsd:jed,nk))   ; zoo(n)%lim_nut_n_ingestion   = 0.0 ! mpoupon
-         allocate(zoo(n)%jmetabo_n(isd:ied,jsd:jed,nk))      ; zoo(n)%jmetabo_n      = 0.0 ! mpoupon
-         allocate(zoo(n)%f_gut_n(isd:ied,jsd:jed,nk))        ; zoo(n)%f_gut_n        = 0.0 ! mpoupon
-         allocate(zoo(n)%f_gut_p(isd:ied,jsd:jed,nk))        ; zoo(n)%f_gut_p        = 0.0 ! mpoupon
-         allocate(zoo(n)%f_gut_fe(isd:ied,jsd:jed,nk))       ; zoo(n)%f_gut_fe       = 0.0 ! mpoupon
-         allocate(zoo(n)%f_gut_si(isd:ied,jsd:jed,nk))       ; zoo(n)%f_gut_si       = 0.0 ! mpoupon
-         allocate(zoo(n)%f_met_n(isd:ied,jsd:jed,nk))        ; zoo(n)%f_met_n        = 0.0 ! mpoupon
-         allocate(zoo(n)%jclear_gut_n(isd:ied,jsd:jed,nk))   ; zoo(n)%jclear_gut_n   = 0.0 ! mpoupon
-         allocate(zoo(n)%jprod_gut_n(isd:ied,jsd:jed,nk))    ; zoo(n)%jprod_gut_n    = 0.0 ! mpoupon
-         allocate(zoo(n)%jclear_gut_p(isd:ied,jsd:jed,nk))   ; zoo(n)%jclear_gut_p   = 0.0 ! mpoupon
-         allocate(zoo(n)%jprod_gut_p(isd:ied,jsd:jed,nk))    ; zoo(n)%jprod_gut_p    = 0.0 ! mpoupon
-         allocate(zoo(n)%jclear_gut_fe(isd:ied,jsd:jed,nk))  ; zoo(n)%jclear_gut_fe  = 0.0 ! mpoupon
-         allocate(zoo(n)%jprod_gut_fe(isd:ied,jsd:jed,nk))   ; zoo(n)%jprod_gut_fe   = 0.0 ! mpoupon
-         allocate(zoo(n)%jclear_gut_si(isd:ied,jsd:jed,nk))  ; zoo(n)%jclear_gut_si  = 0.0 ! mpoupon
-         allocate(zoo(n)%jprod_gut_si(isd:ied,jsd:jed,nk))   ; zoo(n)%jprod_gut_si   = 0.0 ! mpoupon
-         allocate(zoo(n)%jclear_met_n(isd:ied,jsd:jed,nk))   ; zoo(n)%jclear_met_n   = 0.0 ! mpoupon
-         allocate(zoo(n)%jprod_met_n(isd:ied,jsd:jed,nk))    ; zoo(n)%jprod_met_n    = 0.0 ! mpoupon
-         allocate(zoo(n)%vmove_met(isd:ied,jsd:jed,nk))      ; zoo(n)%vmove_met      = 0.0 ! mpoupon
-         allocate(zoo(n)%vmove_gut(isd:ied,jsd:jed,nk))      ; zoo(n)%vmove_gut      = 0.0 ! mpoupon
-         allocate(zoo(n)%vmove_gut_p(isd:ied,jsd:jed,nk))    ; zoo(n)%vmove_gut_p    = 0.0 ! mpoupon
-         allocate(zoo(n)%vmove_gut_fe(isd:ied,jsd:jed,nk))   ; zoo(n)%vmove_gut_fe   = 0.0 ! mpoupon
-         allocate(zoo(n)%vmove_gut_si(isd:ied,jsd:jed,nk))   ; zoo(n)%vmove_gut_si   = 0.0 ! mpoupon
-       endif
+        if ( ( n .eq. 4 .or. n .eq. 5 ) .and. do_dvm ) then
+          allocate(zoo(n)%lim_nut_n_ingestion(isd:ied,jsd:jed,nk))   ; zoo(n)%lim_nut_n_ingestion   = 0.0
+          allocate(zoo(n)%jmetabo_n(isd:ied,jsd:jed,nk))      ; zoo(n)%jmetabo_n      = 0.0
+          allocate(zoo(n)%f_gut_n(isd:ied,jsd:jed,nk))        ; zoo(n)%f_gut_n        = 0.0
+          allocate(zoo(n)%f_gut_p(isd:ied,jsd:jed,nk))        ; zoo(n)%f_gut_p        = 0.0
+          allocate(zoo(n)%f_gut_fe(isd:ied,jsd:jed,nk))       ; zoo(n)%f_gut_fe       = 0.0
+          allocate(zoo(n)%f_gut_si(isd:ied,jsd:jed,nk))       ; zoo(n)%f_gut_si       = 0.0
+          allocate(zoo(n)%f_met_n(isd:ied,jsd:jed,nk))        ; zoo(n)%f_met_n        = 0.0
+          allocate(zoo(n)%jclear_gut_n(isd:ied,jsd:jed,nk))   ; zoo(n)%jclear_gut_n   = 0.0
+          allocate(zoo(n)%jprod_gut_n(isd:ied,jsd:jed,nk))    ; zoo(n)%jprod_gut_n    = 0.0
+          allocate(zoo(n)%jclear_gut_p(isd:ied,jsd:jed,nk))   ; zoo(n)%jclear_gut_p   = 0.0
+          allocate(zoo(n)%jprod_gut_p(isd:ied,jsd:jed,nk))    ; zoo(n)%jprod_gut_p    = 0.0
+          allocate(zoo(n)%jclear_gut_fe(isd:ied,jsd:jed,nk))  ; zoo(n)%jclear_gut_fe  = 0.0
+          allocate(zoo(n)%jprod_gut_fe(isd:ied,jsd:jed,nk))   ; zoo(n)%jprod_gut_fe   = 0.0
+          allocate(zoo(n)%jclear_gut_si(isd:ied,jsd:jed,nk))  ; zoo(n)%jclear_gut_si  = 0.0
+          allocate(zoo(n)%jprod_gut_si(isd:ied,jsd:jed,nk))   ; zoo(n)%jprod_gut_si   = 0.0
+          allocate(zoo(n)%jclear_met_n(isd:ied,jsd:jed,nk))   ; zoo(n)%jclear_met_n   = 0.0
+          allocate(zoo(n)%jprod_met_n(isd:ied,jsd:jed,nk))    ; zoo(n)%jprod_met_n    = 0.0
+          allocate(zoo(n)%vmove_met(isd:ied,jsd:jed,nk))      ; zoo(n)%vmove_met      = 0.0
+          allocate(zoo(n)%vmove_gut(isd:ied,jsd:jed,nk))      ; zoo(n)%vmove_gut      = 0.0
+          allocate(zoo(n)%vmove_gut_p(isd:ied,jsd:jed,nk))    ; zoo(n)%vmove_gut_p    = 0.0
+          allocate(zoo(n)%vmove_gut_fe(isd:ied,jsd:jed,nk))   ; zoo(n)%vmove_gut_fe   = 0.0
+          allocate(zoo(n)%vmove_gut_si(isd:ied,jsd:jed,nk))   ; zoo(n)%vmove_gut_si   = 0.0
+        endif
     enddo
 
     ! higher predator ingestion
@@ -8480,6 +8465,7 @@ contains
     allocate(cobalt%jnsmz(isd:ied, jsd:jed, 1:nk))        ; cobalt%jnsmz=0.0
     allocate(cobalt%jnmdz(isd:ied, jsd:jed, 1:nk))        ; cobalt%jnmdz=0.0
     allocate(cobalt%jnlgz(isd:ied, jsd:jed, 1:nk))        ; cobalt%jnlgz=0.0
+    if (do_dvm) then
     allocate(cobalt%jnvmmdz(isd:ied, jsd:jed, 1:nk))        ; cobalt%jnvmmdz=0.0
     allocate(cobalt%jnvmlgz(isd:ied, jsd:jed, 1:nk))        ; cobalt%jnvmlgz=0.0
     allocate(cobalt%jnvmmdz_gut(isd:ied, jsd:jed, 1:nk))        ; cobalt%jnvmmdz_gut=0.0
@@ -8492,6 +8478,7 @@ contains
     allocate(cobalt%jsivmlgz_gut(isd:ied, jsd:jed, 1:nk))       ; cobalt%jsivmlgz_gut=0.0
     allocate(cobalt%jnvmmdz_met(isd:ied, jsd:jed, 1:nk))        ; cobalt%jnvmmdz_met=0.0
     allocate(cobalt%jnvmlgz_met(isd:ied, jsd:jed, 1:nk))        ; cobalt%jnvmlgz=0.0
+    endif
     allocate(cobalt%jalk(isd:ied, jsd:jed, 1:nk))         ; cobalt%jalk=0.0
     allocate(cobalt%jalkh(isd:ied, jsd:jed, 1:nk))        ; cobalt%jalkh=0.0
     allocate(cobalt%jalk_plus_btm(isd:ied, jsd:jed, 1:nk)); cobalt%jalk_plus_btm=0.0
@@ -9025,29 +9012,30 @@ contains
        deallocate(zoo(n)%temp_lim)
        deallocate(zoo(n)%vmove)                  ! mpoupon
       
-       if ( n .eq. 4 .or. n .eq. 5) then
-          deallocate(zoo(n)%lim_nut_n_ingestion) ! mpoupon
-          deallocate(zoo(n)%f_gut_n)        ! mpoupon
-          deallocate(zoo(n)%f_gut_p)        ! mpoupon
-          deallocate(zoo(n)%f_gut_fe)       ! mpoupon
-          deallocate(zoo(n)%f_gut_si)       ! mpoupon
-          deallocate(zoo(n)%f_met_n)        ! mpoupon
-          deallocate(zoo(n)%jclear_gut_n)   ! mpoupon
-          deallocate(zoo(n)%jprod_gut_n)    ! mpoupon
-          deallocate(zoo(n)%jclear_gut_p)   ! mpoupon
-          deallocate(zoo(n)%jprod_gut_p)    ! mpoupon
-          deallocate(zoo(n)%jclear_gut_fe)  ! mpoupon
-          deallocate(zoo(n)%jprod_gut_fe)   ! mpoupon
-          deallocate(zoo(n)%jclear_gut_si)  ! mpoupon
-          deallocate(zoo(n)%jprod_gut_si)   ! mpoupon
-          deallocate(zoo(n)%jclear_met_n)   ! mpoupon
-          deallocate(zoo(n)%jprod_met_n)    ! mpoupon
-          deallocate(zoo(n)%vmove_met)      ! mpoupon
-          deallocate(zoo(n)%vmove_gut)      ! mpoupon
-          deallocate(zoo(n)%vmove_gut_p)    ! mpoupon
-          deallocate(zoo(n)%vmove_gut_fe)   ! mpoupon
-          deallocate(zoo(n)%vmove_gut_si)   ! mpoupon
-       endif
+        if ( ( n .eq. 4 .or. n .eq. 5 ) .and. do_dvm ) then
+           deallocate(zoo(n)%lim_nut_n_ingestion)
+           deallocate(zoo(n)%jmetabo_n)
+           deallocate(zoo(n)%f_gut_n)
+           deallocate(zoo(n)%f_gut_p)
+           deallocate(zoo(n)%f_gut_fe)
+           deallocate(zoo(n)%f_gut_si)
+           deallocate(zoo(n)%f_met_n)
+           deallocate(zoo(n)%jclear_gut_n)
+           deallocate(zoo(n)%jprod_gut_n)
+           deallocate(zoo(n)%jclear_gut_p)
+           deallocate(zoo(n)%jprod_gut_p)
+           deallocate(zoo(n)%jclear_gut_fe)
+           deallocate(zoo(n)%jprod_gut_fe)
+           deallocate(zoo(n)%jclear_gut_si)
+           deallocate(zoo(n)%jprod_gut_si)
+           deallocate(zoo(n)%jclear_met_n)
+           deallocate(zoo(n)%jprod_met_n)
+           deallocate(zoo(n)%vmove_met)
+           deallocate(zoo(n)%vmove_gut)
+           deallocate(zoo(n)%vmove_gut_p)
+           deallocate(zoo(n)%vmove_gut_fe)
+           deallocate(zoo(n)%vmove_gut_si)
+        endif
     enddo
 
     deallocate(cobalt%f_alk)
@@ -9121,6 +9109,7 @@ contains
     deallocate(cobalt%jnsmz)
     deallocate(cobalt%jnmdz)
     deallocate(cobalt%jnlgz)
+    if (do_dvm) then
     deallocate(cobalt%jnvmmdz)
     deallocate(cobalt%jnvmlgz)
     deallocate(cobalt%jnvmmdz_gut)
@@ -9133,6 +9122,7 @@ contains
     deallocate(cobalt%jsivmlgz_gut)
     deallocate(cobalt%jnvmmdz_met)
     deallocate(cobalt%jnvmlgz_met)
+    endif
     deallocate(cobalt%jalk)
     deallocate(cobalt%jalkh)
     deallocate(cobalt%jalk_plus_btm)
