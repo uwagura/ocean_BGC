@@ -280,9 +280,6 @@ module cobalt_types
 
     real swim_stop_o2      ! oxygen concentration limit for swimming
     real phi_aresp         ! fraction of ingested N to active (food-dependent) respiration
-    real assim_eff_max     ! zooplankton maximum assimilation efficiency
-    real assim_eff_min     ! zooplankton minimum assimilation efficiency
-    real kae               ! half-saturation constant for assimilation efficiency (moles N m-3)
     real phi_det           !< fraction of ingested N to detritus
     real phi_ldon          !< fraction of ingested N/P to labile don
     real phi_sldon         !< fraction of ingested N/P to semi-labile don
@@ -317,7 +314,6 @@ module cobalt_types
     real, ALLOCATABLE, dimension(:,:,:) ::  f_gut_fe        ! zooplankton fe gut content ! mpoupon
     real, ALLOCATABLE, dimension(:,:,:) ::  f_gut_si        ! zooplankton si gut content ! mpoupon
     real, ALLOCATABLE, dimension(:,:,:) ::  f_met_n         ! zooplankton metabolites ! mpoupon
-    real, ALLOCATABLE, dimension(:,:,:) ::  assim_eff       ! zooplankton assimilation efficiency
     real, ALLOCATABLE, dimension(:,:,:) ::  jclear_gut_n    ! mpoupon
     real, ALLOCATABLE, dimension(:,:,:) ::  jprod_gut_n     ! mpoupon
     real, ALLOCATABLE, dimension(:,:,:) ::  jclear_gut_p    ! mpoupon
@@ -389,7 +385,6 @@ module cobalt_types
     integer ::  id_temp_lim       = -1 !< ID associated with diagnostics for temperature limitation
     integer ::  id_vmove              = -1 !
     integer ::   id_z_mig             = -1 !
-    integer ::   id_assim_eff         = -1 !
     integer ::   id_jclear_gut_n      = -1 !
     integer ::   id_jprod_gut_n       = -1 !
     integer ::   id_jclear_gut_p      = -1 !

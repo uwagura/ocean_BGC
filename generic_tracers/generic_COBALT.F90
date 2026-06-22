@@ -4831,15 +4831,7 @@ contains
           ingest_matrix(4,3) + ingest_matrix(4,4) + ingest_matrix(5,1) + ingest_matrix(5,2) + &
           ingest_matrix(5,3) + ingest_matrix(5,4)
 
-       ! Calculate assimilation efficiency.
-       ! Allows for AE to vary between max and min values with a michaelis-menten functional form
-       
-       do m = 1,NUM_ZOO
-          zoo(m)%assim_eff(i,j,k) = zoo(m)%assim_eff_max - ((zoo(m)%assim_eff_max - zoo(m)%assim_eff_min) * &
-                                 (tot_prey(m)/(zoo(m)%kae + tot_prey(m))))
-       enddo
-
-       !
+        !
        ! calculate losses of each prey type to zooplankton, starting with phytoplankton
        !
        do n = 1,NUM_PHYTO
@@ -8336,8 +8328,7 @@ contains
     !
     do n = 1, NUM_ZOO
        allocate(zoo(n)%f_n(isd:ied,jsd:jed,nk))           ; zoo(n)%f_n            = 0.0
-       allocate(zoo(n)%assim_eff(isd:ied,jsd:jed,nk))     ; zoo(n)%assim_eff      = 0.0
-       allocate(zoo(n)%jzloss_n(isd:ied,jsd:jed,nk))      ; zoo(n)%jzloss_n       = 0.0
+        allocate(zoo(n)%jzloss_n(isd:ied,jsd:jed,nk))      ; zoo(n)%jzloss_n       = 0.0
        allocate(zoo(n)%jzloss_p(isd:ied,jsd:jed,nk))      ; zoo(n)%jzloss_p       = 0.0
        allocate(zoo(n)%jhploss_n(isd:ied,jsd:jed,nk))     ; zoo(n)%jhploss_n      = 0.0
        allocate(zoo(n)%jhploss_p(isd:ied,jsd:jed,nk))     ; zoo(n)%jhploss_p      = 0.0
@@ -8986,8 +8977,7 @@ contains
     ! zooplankton
     do n = 1, NUM_ZOO
        deallocate(zoo(n)%f_n)
-       deallocate(zoo(n)%assim_eff)
-       deallocate(zoo(n)%jzloss_n)
+        deallocate(zoo(n)%jzloss_n)
        deallocate(zoo(n)%jzloss_p)
        deallocate(zoo(n)%jhploss_n)
        deallocate(zoo(n)%jhploss_p)

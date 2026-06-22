@@ -1809,31 +1809,6 @@ module COBALT_reg_diag
     endif
 
 
-    vardesc_temp = vardesc("AE_Smz","Assimilation efficiency of small zooplankton",'h','L','s','dimensionless','f')
-    zoo(1)%id_assim_eff = register_diag_field(package_name, vardesc_temp%name, axes(1:3),&
-          init_time, vardesc_temp%longname,vardesc_temp%units, missing_value = missing_value1)
- 
-    vardesc_temp = vardesc("AE_Mdz","Assimilation efficiency of medium zooplankton",'h','L','s','dimensionless','f')
-    zoo(2)%id_assim_eff = register_diag_field(package_name, vardesc_temp%name, axes(1:3),&
-          init_time, vardesc_temp%longname,vardesc_temp%units, missing_value = missing_value1)
- 
-    vardesc_temp = vardesc("AE_Lgz","Assimilation efficiency of large zooplankton",'h','L','s','dimensionless','f')
-    zoo(3)%id_assim_eff = register_diag_field(package_name, vardesc_temp%name, axes(1:3),&
-          init_time, vardesc_temp%longname,vardesc_temp%units, missing_value = missing_value1)
- 
-    if (do_dvm) then
-    vardesc_temp = vardesc("AE_vmMdz","Assimilation efficiency of migrating medium zooplankton",'h','L','s','dimensionless','f')
-    zoo(4)%id_assim_eff = register_diag_field(package_name, vardesc_temp%name, axes(1:3),&
-          init_time, vardesc_temp%longname,vardesc_temp%units, missing_value = missing_value1)
-    endif
- 
-    if (do_dvm) then
-    vardesc_temp = vardesc("AE_vmLgz","Assimilation efficiency of migrating large zooplankton",'h','L','s','dimensionless','f')
-    zoo(5)%id_assim_eff = register_diag_field(package_name, vardesc_temp%name, axes(1:3),&
-         init_time, vardesc_temp%longname,vardesc_temp%units, missing_value = missing_value1)
-    endif
-
-
     vardesc_temp = vardesc("jmetabo_nSmz","Production of nh4 by small zooplankton metabolism, layer integral",&
                            'h','L','s','mol N m-2 s-1','f')
     zoo(1)%id_jmetabo_n = register_diag_field(package_name, vardesc_temp%name, axes(1:3),&
