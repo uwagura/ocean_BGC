@@ -23,6 +23,10 @@ module COBALT_eco
   public dvm_migration
   public dvm_gut_production
   public dvm_bioenergetics
+  public dvm_conservation_totn, dvm_conservation_totc, dvm_conservation_totp
+  public dvm_conservation_totfe, dvm_conservation_totsi
+  public dvm_apply_tendencies
+  public dvm_add_layer_integrals
 
   contains
 
@@ -603,6 +607,155 @@ module COBALT_eco
                 cobalt%jprod_pdet(i,j,k) = cobalt%jprod_pdet(i,j,k) - zoo(m)%jprod_n(i,j,k)*zoo(m)%q_p_2_n
              endif
   end subroutine dvm_bioenergetics
+
+  !> Per-point DVM contributions to the biological source/sink conservation
+  !! totals (nitrogen, carbon, phosphorus, iron, silica). Each returns the
+  !! migrating-zooplankton addition to one total at (i,j,k); the caller adds it
+  !! to pre_tot*/post_tot* in generic_COBALT. Expressions are verbatim from the
+  !! original update_from_source pre/post conservation loops (Stage 6), which
+  !! used identical terms for the pre- and post-source-sink totals.
+  function dvm_conservation_totn(cobalt, i, j, k, tau, tmask) result(contrib)
+    type(generic_COBALT_type), intent(in) :: cobalt
+    integer,                   intent(in) :: i, j, k, tau
+    real,                      intent(in) :: tmask
+    real :: contrib
+    contrib = (cobalt%dvm%p_nvmmdz(i,j,k,tau) + &
+               cobalt%dvm%p_nvmmdz_gut(i,j,k,tau)  + cobalt%dvm%p_nvmmdz_met(i,j,k,tau) + &
+               cobalt%dvm%p_nvmlgz(i,j,k,tau)      + cobalt%dvm%p_nvmlgz_gut(i,j,k,tau) + &
+               cobalt%dvm%p_nvmlgz_met(i,j,k,tau))*tmask
+  end function dvm_conservation_totn
+
+  function dvm_conservation_totc(cobalt, i, j, k, tau, tmask) result(contrib)
+    type(generic_COBALT_type), intent(in) :: cobalt
+    integer,                   intent(in) :: i, j, k, tau
+    real,                      intent(in) :: tmask
+    real :: contrib
+    contrib = cobalt%c_2_n*(cobalt%dvm%p_nvmmdz(i,j,k,tau) + &
+               cobalt%dvm%p_nvmmdz_gut(i,j,k,tau)  + cobalt%dvm%p_nvmmdz_met(i,j,k,tau) + &
+               cobalt%dvm%p_nvmlgz(i,j,k,tau)      + cobalt%dvm%p_nvmlgz_gut(i,j,k,tau) + &
+               cobalt%dvm%p_nvmlgz_met(i,j,k,tau))*tmask
+  end function dvm_conservation_totc
+
+  function dvm_conservation_totp(cobalt, zoo, i, j, k, tau, tmask) result(contrib)
+    type(generic_COBALT_type),             intent(in) :: cobalt
+    type(zooplankton), dimension(NUM_ZOO), intent(in) :: zoo
+    integer,                               intent(in) :: i, j, k, tau
+    real,                                  intent(in) :: tmask
+    real :: contrib
+    contrib = (cobalt%dvm%p_nvmmdz(i,j,k,tau)*zoo(4)%q_p_2_n + &
+               cobalt%dvm%p_nvmlgz(i,j,k,tau)*zoo(5)%q_p_2_n + &
+               cobalt%dvm%p_pvmmdz_gut(i,j,k,tau) + &
+               cobalt%dvm%p_pvmlgz_gut(i,j,k,tau) + &
+               cobalt%dvm%p_nvmmdz_met(i,j,k,tau)*zoo(4)%q_p_2_n + &
+               cobalt%dvm%p_nvmlgz_met(i,j,k,tau)*zoo(5)%q_p_2_n)*tmask
+  end function dvm_conservation_totp
+
+  function dvm_conservation_totfe(cobalt, i, j, k, tau, tmask) result(contrib)
+    type(generic_COBALT_type), intent(in) :: cobalt
+    integer,                   intent(in) :: i, j, k, tau
+    real,                      intent(in) :: tmask
+    real :: contrib
+    contrib = (cobalt%dvm%p_fevmmdz_gut(i,j,k,tau) + &
+               cobalt%dvm%p_fevmlgz_gut(i,j,k,tau))*tmask
+  end function dvm_conservation_totfe
+
+  function dvm_conservation_totsi(cobalt, i, j, k, tau, tmask) result(contrib)
+    type(generic_COBALT_type), intent(in) :: cobalt
+    integer,                   intent(in) :: i, j, k, tau
+    real,                      intent(in) :: tmask
+    real :: contrib
+    contrib = (cobalt%dvm%p_sivmmdz_gut(i,j,k,tau) + &
+               cobalt%dvm%p_sivmlgz_gut(i,j,k,tau))*tmask
+  end function dvm_conservation_totsi
+
+  !> Assemble the DVM prognostic-tracer source/sink tendencies at (i,j,k) and
+  !! step the 12 migrating-zooplankton tracers forward. Extracted verbatim from
+  !! generic_COBALT update_from_source (Stage 6), the do_dvm block of the zoo
+  !! source/sink loop; grid_tmask(i,j,k) is passed as the scalar tmask.
+  subroutine dvm_apply_tendencies(cobalt, zoo, dt, tmask, i, j, k, tau)
+    type(generic_COBALT_type),             intent(inout) :: cobalt
+    type(zooplankton), dimension(NUM_ZOO), intent(in)    :: zoo
+    real,                                  intent(in)    :: dt, tmask
+    integer,                               intent(in)    :: i, j, k, tau
+
+        !
+        ! Vertically migrating medium zooplankton
+        !
+        cobalt%dvm%jnvmmdz(i,j,k) = zoo(4)%jprod_n(i,j,k) - zoo(4)%jzloss_n(i,j,k) - &
+                              zoo(4)%jhploss_n(i,j,k)
+        cobalt%dvm%p_nvmmdz(i,j,k,tau) = cobalt%dvm%p_nvmmdz(i,j,k,tau) + cobalt%dvm%jnvmmdz(i,j,k)*dt*tmask
+        
+        cobalt%dvm%jnvmmdz_gut(i,j,k) = zoo(4)%jprod_gut_n(i,j,k) - zoo(4)%jclear_gut_n(i,j,k)                               ! mpoupon
+        cobalt%dvm%p_nvmmdz_gut(i,j,k,tau) = cobalt%dvm%p_nvmmdz_gut(i,j,k,tau) + cobalt%dvm%jnvmmdz_gut(i,j,k)*dt*tmask ! mpoupon
+        
+        cobalt%dvm%jpvmmdz_gut(i,j,k) = zoo(4)%jprod_gut_p(i,j,k) - zoo(4)%jclear_gut_p(i,j,k)                               ! mpoupon
+        cobalt%dvm%p_pvmmdz_gut(i,j,k,tau) = cobalt%dvm%p_pvmmdz_gut(i,j,k,tau) + cobalt%dvm%jpvmmdz_gut(i,j,k)*dt*tmask ! mpoupon
+        
+        cobalt%dvm%jfevmmdz_gut(i,j,k) = zoo(4)%jprod_gut_fe(i,j,k) - zoo(4)%jclear_gut_fe(i,j,k)                               ! mpoupon
+        cobalt%dvm%p_fevmmdz_gut(i,j,k,tau) = cobalt%dvm%p_fevmmdz_gut(i,j,k,tau) + cobalt%dvm%jfevmmdz_gut(i,j,k)*dt*tmask ! mpoupon
+    
+        cobalt%dvm%jsivmmdz_gut(i,j,k) = zoo(4)%jprod_gut_si(i,j,k) - zoo(4)%jclear_gut_si(i,j,k)                               ! mpoupon
+        cobalt%dvm%p_sivmmdz_gut(i,j,k,tau) = cobalt%dvm%p_sivmmdz_gut(i,j,k,tau) + cobalt%dvm%jsivmmdz_gut(i,j,k)*dt*tmask ! mpoupon
+
+        cobalt%dvm%jnvmmdz_met(i,j,k) = zoo(4)%jprod_met_n(i,j,k) - zoo(4)%jclear_met_n(i,j,k)                               ! mpoupon
+        cobalt%dvm%p_nvmmdz_met(i,j,k,tau) = cobalt%dvm%p_nvmmdz_met(i,j,k,tau) + cobalt%dvm%jnvmmdz_met(i,j,k)*dt*tmask ! mpoupon
+
+        !
+        ! Vertically migrating large zooplankton
+        !
+        cobalt%dvm%jnvmlgz(i,j,k) = zoo(5)%jprod_n(i,j,k) - zoo(5)%jzloss_n(i,j,k) - &
+                              zoo(5)%jhploss_n(i,j,k)
+        cobalt%dvm%p_nvmlgz(i,j,k,tau) = cobalt%dvm%p_nvmlgz(i,j,k,tau) + cobalt%dvm%jnvmlgz(i,j,k)*dt*tmask
+        
+        cobalt%dvm%jnvmlgz_gut(i,j,k) =  zoo(5)%jprod_gut_n(i,j,k) - zoo(5)%jclear_gut_n(i,j,k)                              ! mpoupon
+        cobalt%dvm%p_nvmlgz_gut(i,j,k,tau) = cobalt%dvm%p_nvmlgz_gut(i,j,k,tau) + cobalt%dvm%jnvmlgz_gut(i,j,k)*dt*tmask ! mpoupon
+   
+        cobalt%dvm%jpvmlgz_gut(i,j,k) =  zoo(5)%jprod_gut_p(i,j,k) - zoo(5)%jclear_gut_p(i,j,k)                              ! mpoupon
+        cobalt%dvm%p_pvmlgz_gut(i,j,k,tau) = cobalt%dvm%p_pvmlgz_gut(i,j,k,tau) + cobalt%dvm%jpvmlgz_gut(i,j,k)*dt*tmask ! mpoupon
+        
+        cobalt%dvm%jfevmlgz_gut(i,j,k) =  zoo(5)%jprod_gut_fe(i,j,k) - zoo(5)%jclear_gut_fe(i,j,k)                              ! mpoupon
+        cobalt%dvm%p_fevmlgz_gut(i,j,k,tau) = cobalt%dvm%p_fevmlgz_gut(i,j,k,tau) + cobalt%dvm%jfevmlgz_gut(i,j,k)*dt*tmask ! mpoupon
+        
+        cobalt%dvm%jsivmlgz_gut(i,j,k) =  zoo(5)%jprod_gut_si(i,j,k) - zoo(5)%jclear_gut_si(i,j,k)                              ! mpoupon
+        cobalt%dvm%p_sivmlgz_gut(i,j,k,tau) = cobalt%dvm%p_sivmlgz_gut(i,j,k,tau) + cobalt%dvm%jsivmlgz_gut(i,j,k)*dt*tmask ! mpoupon
+
+        cobalt%dvm%jnvmlgz_met(i,j,k) =  zoo(5)%jprod_met_n(i,j,k) - zoo(5)%jclear_met_n(i,j,k)                              ! mpoupon
+        cobalt%dvm%p_nvmlgz_met(i,j,k,tau) = cobalt%dvm%p_nvmlgz_met(i,j,k,tau) + cobalt%dvm%jnvmlgz_met(i,j,k)*dt*tmask ! mpoupon
+  end subroutine dvm_apply_tendencies
+
+  !> Add the migrating-zooplankton contributions to the whole-column layer
+  !! integrals (carbon, POC, iron, nitrogen, phosphorus, silica). Extracted
+  !! verbatim from generic_COBALT update_from_source (Stage 6); these are
+  !! diagnostic integrals accumulated after the source/sink update.
+  subroutine dvm_add_layer_integrals(cobalt, zoo, rho_dzt, ilb, jlb, tau)
+    type(generic_COBALT_type),             intent(inout) :: cobalt
+    type(zooplankton), dimension(NUM_ZOO), intent(in)    :: zoo
+    real, dimension(ilb:,jlb:,:),          intent(in)    :: rho_dzt
+    integer,                               intent(in)    :: ilb, jlb, tau
+
+     cobalt%tot_layer_int_c(:,:,:) = cobalt%tot_layer_int_c(:,:,:) + &
+          cobalt%c_2_n * (cobalt%dvm%p_nvmmdz(:,:,:,tau) + cobalt%dvm%p_nvmlgz(:,:,:,tau) + &
+          cobalt%dvm%p_nvmmdz_met(:,:,:,tau) + cobalt%dvm%p_nvmlgz_met(:,:,:,tau) + cobalt%dvm%p_nvmmdz_gut(:,:,:,tau) + &
+          cobalt%dvm%p_nvmlgz_gut(:,:,:,tau)) * rho_dzt(:,:,:)
+     cobalt%tot_layer_int_poc(:,:,:) = cobalt%tot_layer_int_poc(:,:,:) + &
+          (cobalt%dvm%p_nvmmdz(:,:,:,tau) + cobalt%dvm%p_nvmlgz(:,:,:,tau) + cobalt%dvm%p_nvmmdz_met(:,:,:,tau) + &
+          cobalt%dvm%p_nvmlgz_met(:,:,:,tau) + cobalt%dvm%p_nvmmdz_gut(:,:,:,tau) + cobalt%dvm%p_nvmlgz_gut(:,:,:,tau))*cobalt%c_2_n*rho_dzt(:,:,:)
+     cobalt%tot_layer_int_fe(:,:,:) = cobalt%tot_layer_int_fe(:,:,:) + &
+          (cobalt%dvm%p_fevmmdz_gut(:,:,:,tau) + cobalt%dvm%p_fevmlgz_gut(:,:,:,tau)) * rho_dzt(:,:,:)
+     cobalt%tot_layer_int_n(:,:,:) = cobalt%tot_layer_int_n(:,:,:) + &
+          (cobalt%dvm%p_nvmmdz(:,:,:,tau) + cobalt%dvm%p_nvmlgz(:,:,:,tau) + cobalt%dvm%p_nvmmdz_met(:,:,:,tau) + &
+          cobalt%dvm%p_nvmlgz_met(:,:,:,tau) + cobalt%dvm%p_nvmmdz_gut(:,:,:,tau) + cobalt%dvm%p_nvmlgz_gut(:,:,:,tau)) * &
+		 rho_dzt(:,:,:)
+     cobalt%tot_layer_int_p(:,:,:) = cobalt%tot_layer_int_p(:,:,:) + &
+          (zoo(4)%q_p_2_n*cobalt%dvm%p_nvmmdz(:,:,:,tau) + &
+          zoo(5)%q_p_2_n*cobalt%dvm%p_nvmlgz(:,:,:,tau) + &
+          cobalt%dvm%p_pvmmdz_gut(:,:,:,tau) + cobalt%dvm%p_pvmlgz_gut(:,:,:,tau) + &
+          zoo(4)%q_p_2_n*cobalt%dvm%p_nvmmdz_met(:,:,:,tau) + &
+          zoo(5)%q_p_2_n*cobalt%dvm%p_nvmlgz_met(:,:,:,tau))*rho_dzt(:,:,:)
+     cobalt%tot_layer_int_si(:,:,:) = cobalt%tot_layer_int_si(:,:,:) + &
+          (cobalt%dvm%p_sivmmdz_gut(:,:,:,tau) + cobalt%dvm%p_sivmlgz_gut(:,:,:,tau)) * rho_dzt(:,:,:)
+  end subroutine dvm_add_layer_integrals
+
 
 
 

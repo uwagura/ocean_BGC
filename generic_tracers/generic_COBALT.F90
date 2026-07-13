@@ -162,6 +162,9 @@ module generic_COBALT
   use cobalt_eco, only : dvm_alloc_arrays, dvm_dealloc_arrays
   use cobalt_eco, only : dvm_migration
   use cobalt_eco, only : dvm_gut_production, dvm_bioenergetics
+  use cobalt_eco, only : dvm_conservation_totn, dvm_conservation_totc, dvm_conservation_totp
+  use cobalt_eco, only : dvm_conservation_totfe, dvm_conservation_totsi
+  use cobalt_eco, only : dvm_apply_tendencies, dvm_add_layer_integrals
   use cobalt_send_diag, only : cobalt_send_diagnostics
   use cobalt_reg_diag, only : cobalt_reg_diagnostics
   use cobalt_param_doc, only : get_COBALT_param_file
@@ -5808,12 +5811,7 @@ contains
                      cobalt%p_ndet_fast(i,j,k,tau)   + &
                      cobalt%p_nsmz(i,j,k,tau)        + cobalt%p_nmdz(i,j,k,tau) + &
                      cobalt%p_nlgz(i,j,k,tau))*grid_tmask(i,j,k)
-          if (do_dvm) then
-          pre_totn(i,j,k) = pre_totn(i,j,k) + (cobalt%dvm%p_nvmmdz(i,j,k,tau) + &
-                     cobalt%dvm%p_nvmmdz_gut(i,j,k,tau)  + cobalt%dvm%p_nvmmdz_met(i,j,k,tau) + &
-                     cobalt%dvm%p_nvmlgz(i,j,k,tau)      + cobalt%dvm%p_nvmlgz_gut(i,j,k,tau) + &
-                     cobalt%dvm%p_nvmlgz_met(i,j,k,tau))*grid_tmask(i,j,k)
-          endif
+          if (do_dvm) pre_totn(i,j,k) = pre_totn(i,j,k) + dvm_conservation_totn(cobalt, i, j, k, tau, grid_tmask(i,j,k))
          net_srcn(i,j,k) = (phyto(DIAZO)%juptake_n2(i,j,k) - cobalt%jno3denit_wc(i,j,k) - &
                     cobalt%jnamx(i,j,k) + cobalt%jno3_iceberg(i,j,k))*dt*grid_tmask(i,j,k)
          ! << Apply neritic CaCO3 burial contribution to net carbon source/sink term
@@ -5830,13 +5828,7 @@ contains
                      cobalt%p_ndet_fast(i,j,k,tau)   + &
                      cobalt%p_nsmz(i,j,k,tau)        + cobalt%p_nmdz(i,j,k,tau) + &
                      cobalt%p_nlgz(i,j,k,tau)))*grid_tmask(i,j,k)
-          if (do_dvm) then
-          pre_totc(i,j,k) = pre_totc(i,j,k) + &
-                     cobalt%c_2_n*(cobalt%dvm%p_nvmmdz(i,j,k,tau) + &
-                     cobalt%dvm%p_nvmmdz_gut(i,j,k,tau)  + cobalt%dvm%p_nvmmdz_met(i,j,k,tau) + &
-                     cobalt%dvm%p_nvmlgz(i,j,k,tau)      + cobalt%dvm%p_nvmlgz_gut(i,j,k,tau) + &
-                     cobalt%dvm%p_nvmlgz_met(i,j,k,tau))*grid_tmask(i,j,k)
-          endif
+          if (do_dvm) pre_totc(i,j,k) = pre_totc(i,j,k) + dvm_conservation_totc(cobalt, i, j, k, tau, grid_tmask(i,j,k))
           pre_totp(i,j,k) = (cobalt%p_po4(i,j,k,tau) + cobalt%p_pdi(i,j,k,tau) + &
                      cobalt%p_plg(i,j,k,tau) + cobalt%p_pmd(i,j,k,tau) + cobalt%p_psm(i,j,k,tau) + &
                      cobalt%p_ldop(i,j,k,tau) + cobalt%p_sldop(i,j,k,tau) + &
@@ -5846,29 +5838,16 @@ contains
                      cobalt%p_nmdz(i,j,k,tau)*zoo(2)%q_p_2_n + &
                      cobalt%p_nlgz(i,j,k,tau)*zoo(3)%q_p_2_n + &
                      bact(1)%q_p_2_n*cobalt%p_nbact(i,j,k,tau))*grid_tmask(i,j,k)
-          if (do_dvm) then
-          pre_totp(i,j,k) = pre_totp(i,j,k) + (cobalt%dvm%p_nvmmdz(i,j,k,tau)*zoo(4)%q_p_2_n + &
-                     cobalt%dvm%p_nvmlgz(i,j,k,tau)*zoo(5)%q_p_2_n + &
-                     cobalt%dvm%p_pvmmdz_gut(i,j,k,tau) + &
-                     cobalt%dvm%p_pvmlgz_gut(i,j,k,tau) + &
-                     cobalt%dvm%p_nvmmdz_met(i,j,k,tau)*zoo(4)%q_p_2_n + &
-                     cobalt%dvm%p_nvmlgz_met(i,j,k,tau)*zoo(5)%q_p_2_n)*grid_tmask(i,j,k)
-          endif
+          if (do_dvm) pre_totp(i,j,k) = pre_totp(i,j,k) + dvm_conservation_totp(cobalt, zoo, i, j, k, tau, grid_tmask(i,j,k))
          net_srcp(i,j,k) = cobalt%jpo4_iceberg(i,j,k)*dt*grid_tmask(i,j,k)
           pre_totfe(i,j,k) = (cobalt%p_fed(i,j,k,tau) + cobalt%p_fedi(i,j,k,tau) + &
                      cobalt%p_felg(i,j,k,tau) + cobalt%p_femd(i,j,k,tau) + cobalt%p_fesm(i,j,k,tau) + &
                      cobalt%p_fedet(i,j,k,tau))*grid_tmask(i,j,k)
-          if (do_dvm) then
-          pre_totfe(i,j,k) = pre_totfe(i,j,k) + (cobalt%dvm%p_fevmmdz_gut(i,j,k,tau) + &
-                     cobalt%dvm%p_fevmlgz_gut(i,j,k,tau))*grid_tmask(i,j,k)
-          endif
+          if (do_dvm) pre_totfe(i,j,k) = pre_totfe(i,j,k) + dvm_conservation_totfe(cobalt, i, j, k, tau, grid_tmask(i,j,k))
           net_srcfe(i,j,k) = (cobalt%jfe_coast(i,j,k)+cobalt%jfe_iceberg(i,j,k))*dt*grid_tmask(i,j,k)
           pre_totsi(i,j,k) = (cobalt%p_sio4(i,j,k,tau) + cobalt%p_silg(i,j,k,tau) + &
                      cobalt%p_simd(i,j,k,tau) + cobalt%p_sidet(i,j,k,tau))*grid_tmask(i,j,k)
-          if (do_dvm) then
-          pre_totsi(i,j,k) = pre_totsi(i,j,k) + (cobalt%dvm%p_sivmmdz_gut(i,j,k,tau) + &
-                     cobalt%dvm%p_sivmlgz_gut(i,j,k,tau))*grid_tmask(i,j,k)
-          endif
+          if (do_dvm) pre_totsi(i,j,k) = pre_totsi(i,j,k) + dvm_conservation_totsi(cobalt, i, j, k, tau, grid_tmask(i,j,k))
     enddo; enddo ; enddo  !} i,j,k
 
     call mpp_clock_end(id_clock_source_sink_loop1)
@@ -6044,51 +6023,7 @@ contains
                              zoo(3)%jhploss_n(i,j,k)
        cobalt%p_nlgz(i,j,k,tau) = cobalt%p_nlgz(i,j,k,tau) + cobalt%jnlgz(i,j,k)*dt*grid_tmask(i,j,k)
 
-     if (do_dvm) then
-        !
-        ! Vertically migrating medium zooplankton
-        !
-        cobalt%dvm%jnvmmdz(i,j,k) = zoo(4)%jprod_n(i,j,k) - zoo(4)%jzloss_n(i,j,k) - &
-                              zoo(4)%jhploss_n(i,j,k)
-        cobalt%dvm%p_nvmmdz(i,j,k,tau) = cobalt%dvm%p_nvmmdz(i,j,k,tau) + cobalt%dvm%jnvmmdz(i,j,k)*dt*grid_tmask(i,j,k)
-        
-        cobalt%dvm%jnvmmdz_gut(i,j,k) = zoo(4)%jprod_gut_n(i,j,k) - zoo(4)%jclear_gut_n(i,j,k)                               ! mpoupon
-        cobalt%dvm%p_nvmmdz_gut(i,j,k,tau) = cobalt%dvm%p_nvmmdz_gut(i,j,k,tau) + cobalt%dvm%jnvmmdz_gut(i,j,k)*dt*grid_tmask(i,j,k) ! mpoupon
-        
-        cobalt%dvm%jpvmmdz_gut(i,j,k) = zoo(4)%jprod_gut_p(i,j,k) - zoo(4)%jclear_gut_p(i,j,k)                               ! mpoupon
-        cobalt%dvm%p_pvmmdz_gut(i,j,k,tau) = cobalt%dvm%p_pvmmdz_gut(i,j,k,tau) + cobalt%dvm%jpvmmdz_gut(i,j,k)*dt*grid_tmask(i,j,k) ! mpoupon
-        
-        cobalt%dvm%jfevmmdz_gut(i,j,k) = zoo(4)%jprod_gut_fe(i,j,k) - zoo(4)%jclear_gut_fe(i,j,k)                               ! mpoupon
-        cobalt%dvm%p_fevmmdz_gut(i,j,k,tau) = cobalt%dvm%p_fevmmdz_gut(i,j,k,tau) + cobalt%dvm%jfevmmdz_gut(i,j,k)*dt*grid_tmask(i,j,k) ! mpoupon
-    
-        cobalt%dvm%jsivmmdz_gut(i,j,k) = zoo(4)%jprod_gut_si(i,j,k) - zoo(4)%jclear_gut_si(i,j,k)                               ! mpoupon
-        cobalt%dvm%p_sivmmdz_gut(i,j,k,tau) = cobalt%dvm%p_sivmmdz_gut(i,j,k,tau) + cobalt%dvm%jsivmmdz_gut(i,j,k)*dt*grid_tmask(i,j,k) ! mpoupon
-
-        cobalt%dvm%jnvmmdz_met(i,j,k) = zoo(4)%jprod_met_n(i,j,k) - zoo(4)%jclear_met_n(i,j,k)                               ! mpoupon
-        cobalt%dvm%p_nvmmdz_met(i,j,k,tau) = cobalt%dvm%p_nvmmdz_met(i,j,k,tau) + cobalt%dvm%jnvmmdz_met(i,j,k)*dt*grid_tmask(i,j,k) ! mpoupon
-
-        !
-        ! Vertically migrating large zooplankton
-        !
-        cobalt%dvm%jnvmlgz(i,j,k) = zoo(5)%jprod_n(i,j,k) - zoo(5)%jzloss_n(i,j,k) - &
-                              zoo(5)%jhploss_n(i,j,k)
-        cobalt%dvm%p_nvmlgz(i,j,k,tau) = cobalt%dvm%p_nvmlgz(i,j,k,tau) + cobalt%dvm%jnvmlgz(i,j,k)*dt*grid_tmask(i,j,k)
-        
-        cobalt%dvm%jnvmlgz_gut(i,j,k) =  zoo(5)%jprod_gut_n(i,j,k) - zoo(5)%jclear_gut_n(i,j,k)                              ! mpoupon
-        cobalt%dvm%p_nvmlgz_gut(i,j,k,tau) = cobalt%dvm%p_nvmlgz_gut(i,j,k,tau) + cobalt%dvm%jnvmlgz_gut(i,j,k)*dt*grid_tmask(i,j,k) ! mpoupon
-   
-        cobalt%dvm%jpvmlgz_gut(i,j,k) =  zoo(5)%jprod_gut_p(i,j,k) - zoo(5)%jclear_gut_p(i,j,k)                              ! mpoupon
-        cobalt%dvm%p_pvmlgz_gut(i,j,k,tau) = cobalt%dvm%p_pvmlgz_gut(i,j,k,tau) + cobalt%dvm%jpvmlgz_gut(i,j,k)*dt*grid_tmask(i,j,k) ! mpoupon
-        
-        cobalt%dvm%jfevmlgz_gut(i,j,k) =  zoo(5)%jprod_gut_fe(i,j,k) - zoo(5)%jclear_gut_fe(i,j,k)                              ! mpoupon
-        cobalt%dvm%p_fevmlgz_gut(i,j,k,tau) = cobalt%dvm%p_fevmlgz_gut(i,j,k,tau) + cobalt%dvm%jfevmlgz_gut(i,j,k)*dt*grid_tmask(i,j,k) ! mpoupon
-        
-        cobalt%dvm%jsivmlgz_gut(i,j,k) =  zoo(5)%jprod_gut_si(i,j,k) - zoo(5)%jclear_gut_si(i,j,k)                              ! mpoupon
-        cobalt%dvm%p_sivmlgz_gut(i,j,k,tau) = cobalt%dvm%p_sivmlgz_gut(i,j,k,tau) + cobalt%dvm%jsivmlgz_gut(i,j,k)*dt*grid_tmask(i,j,k) ! mpoupon
-
-        cobalt%dvm%jnvmlgz_met(i,j,k) =  zoo(5)%jprod_met_n(i,j,k) - zoo(5)%jclear_met_n(i,j,k)                              ! mpoupon
-        cobalt%dvm%p_nvmlgz_met(i,j,k,tau) = cobalt%dvm%p_nvmlgz_met(i,j,k,tau) + cobalt%dvm%jnvmlgz_met(i,j,k)*dt*grid_tmask(i,j,k) ! mpoupon
-     endif ! do_dvm
+     if (do_dvm) call dvm_apply_tendencies(cobalt, zoo, dt, grid_tmask(i,j,k), i, j, k, tau)
      enddo; enddo ; enddo  !} i,j,k
 !
     call mpp_clock_end(id_clock_source_sink_loop4)
@@ -6443,12 +6378,7 @@ contains
                      cobalt%p_ndet_fast(i,j,k,tau) + &
                      cobalt%p_nsmz(i,j,k,tau) + cobalt%p_nmdz(i,j,k,tau) + &
                      cobalt%p_nlgz(i,j,k,tau))*grid_tmask(i,j,k)
-          if (do_dvm) then
-          post_totn(i,j,k) = post_totn(i,j,k) + (cobalt%dvm%p_nvmmdz(i,j,k,tau) + &
-                     cobalt%dvm%p_nvmmdz_gut(i,j,k,tau) + cobalt%dvm%p_nvmmdz_met(i,j,k,tau) + &
-                     cobalt%dvm%p_nvmlgz(i,j,k,tau)  + cobalt%dvm%p_nvmlgz_gut(i,j,k,tau) + &
-                     cobalt%dvm%p_nvmlgz_met(i,j,k,tau))*grid_tmask(i,j,k)
-          endif
+          if (do_dvm) post_totn(i,j,k) = post_totn(i,j,k) + dvm_conservation_totn(cobalt, i, j, k, tau, grid_tmask(i,j,k))
          imbal = (post_totn(i,j,k) - pre_totn(i,j,k) - net_srcn(i,j,k))*86400.0/dt*1.03e6
          if (abs(imbal).gt.imbalance_tolerance) then
            call mpp_error(FATAL,&
@@ -6464,13 +6394,7 @@ contains
                      cobalt%p_ndet_fast(i,j,k,tau) + &
                      cobalt%p_nsmz(i,j,k,tau) + cobalt%p_nmdz(i,j,k,tau) + &
                      cobalt%p_nlgz(i,j,k,tau)))*grid_tmask(i,j,k)
-          if (do_dvm) then
-          post_totc(i,j,k) = post_totc(i,j,k) + &
-                     cobalt%c_2_n*(cobalt%dvm%p_nvmmdz(i,j,k,tau) + &
-                     cobalt%dvm%p_nvmmdz_gut(i,j,k,tau) + cobalt%dvm%p_nvmmdz_met(i,j,k,tau) + &
-                     cobalt%dvm%p_nvmlgz(i,j,k,tau)  + cobalt%dvm%p_nvmlgz_gut(i,j,k,tau) + &
-                     cobalt%dvm%p_nvmlgz_met(i,j,k,tau))*grid_tmask(i,j,k)
-          endif
+          if (do_dvm) post_totc(i,j,k) = post_totc(i,j,k) + dvm_conservation_totc(cobalt, i, j, k, tau, grid_tmask(i,j,k))
         imbal = (post_totc(i,j,k) - pre_totc(i,j,k) - net_srcc(i,j,k))*86400.0/dt*1.03e6
          if (abs(imbal).gt.imbalance_tolerance) then
            call mpp_error(FATAL,&
@@ -6486,14 +6410,7 @@ contains
                      cobalt%p_nmdz(i,j,k,tau)*zoo(2)%q_p_2_n + &
                      cobalt%p_nlgz(i,j,k,tau)*zoo(3)%q_p_2_n  + &
                      bact(1)%q_p_2_n*cobalt%p_nbact(i,j,k,tau))*grid_tmask(i,j,k)
-          if (do_dvm) then
-          post_totp(i,j,k) = post_totp(i,j,k) + (cobalt%dvm%p_nvmmdz(i,j,k,tau)*zoo(4)%q_p_2_n + &
-                     cobalt%dvm%p_nvmlgz(i,j,k,tau)*zoo(5)%q_p_2_n + &
-                     cobalt%dvm%p_pvmmdz_gut(i,j,k,tau) + &
-                     cobalt%dvm%p_pvmlgz_gut(i,j,k,tau) + &
-                     cobalt%dvm%p_nvmmdz_met(i,j,k,tau)*zoo(4)%q_p_2_n + &
-                     cobalt%dvm%p_nvmlgz_met(i,j,k,tau)*zoo(5)%q_p_2_n)*grid_tmask(i,j,k)
-          endif
+          if (do_dvm) post_totp(i,j,k) = post_totp(i,j,k) + dvm_conservation_totp(cobalt, zoo, i, j, k, tau, grid_tmask(i,j,k))
          imbal = (post_totp(i,j,k) - pre_totp(i,j,k) - net_srcp(i,j,k))*86400.0/dt*1.03e6
          if (abs(imbal).gt.imbalance_tolerance) then
            call mpp_error(FATAL,&
@@ -6503,10 +6420,7 @@ contains
           post_totfe(i,j,k) = (cobalt%p_fed(i,j,k,tau) + cobalt%p_fedi(i,j,k,tau) + &
                      cobalt%p_felg(i,j,k,tau) + cobalt%p_femd(i,j,k,tau) + cobalt%p_fesm(i,j,k,tau) + &
                      cobalt%p_fedet(i,j,k,tau))*grid_tmask(i,j,k)
-          if (do_dvm) then
-          post_totfe(i,j,k) = post_totfe(i,j,k) + (cobalt%dvm%p_fevmmdz_gut(i,j,k,tau) + &
-                     cobalt%dvm%p_fevmlgz_gut(i,j,k,tau))*grid_tmask(i,j,k)
-          endif
+          if (do_dvm) post_totfe(i,j,k) = post_totfe(i,j,k) + dvm_conservation_totfe(cobalt, i, j, k, tau, grid_tmask(i,j,k))
          imbal = (post_totfe(i,j,k) - pre_totfe(i,j,k) - net_srcfe(i,j,k))*86400.0/dt*1.03e6
          if (abs(imbal).gt.imbalance_tolerance) then
            call mpp_error(FATAL,&
@@ -6515,10 +6429,7 @@ contains
 
           post_totsi(i,j,k) = (cobalt%p_sio4(i,j,k,tau) + cobalt%p_silg(i,j,k,tau) + &
                      cobalt%p_simd(i,j,k,tau) + cobalt%p_sidet(i,j,k,tau))*grid_tmask(i,j,k)
-          if (do_dvm) then
-          post_totsi(i,j,k) = post_totsi(i,j,k) + (cobalt%dvm%p_sivmmdz_gut(i,j,k,tau) + &
-                     cobalt%dvm%p_sivmlgz_gut(i,j,k,tau))*grid_tmask(i,j,k)
-          endif
+          if (do_dvm) post_totsi(i,j,k) = post_totsi(i,j,k) + dvm_conservation_totsi(cobalt, i, j, k, tau, grid_tmask(i,j,k))
           imbal = (post_totsi(i,j,k) - pre_totsi(i,j,k))*86400.0/dt*1.03e6
          if (abs(imbal).gt.imbalance_tolerance) then
            call mpp_error(FATAL,&
@@ -6686,12 +6597,6 @@ contains
           cobalt%p_nmd(:,:,:,tau) + cobalt%p_nsm(:,:,:,tau) + cobalt%p_nbact(:,:,:,tau) + cobalt%p_ldon(:,:,:,tau) + &
           cobalt%p_sldon(:,:,:,tau) + cobalt%p_srdon(:,:,:,tau) + cobalt%p_ndet(:,:,:,tau) +  cobalt%p_ndet_fast(:,:,:,tau) + &
           cobalt%p_nsmz(:,:,:,tau) + cobalt%p_nmdz(:,:,:,tau) + cobalt%p_nlgz(:,:,:,tau))) * rho_dzt(:,:,:)
-     if (do_dvm) then
-     cobalt%tot_layer_int_c(:,:,:) = cobalt%tot_layer_int_c(:,:,:) + &
-          cobalt%c_2_n * (cobalt%dvm%p_nvmmdz(:,:,:,tau) + cobalt%dvm%p_nvmlgz(:,:,:,tau) + &
-          cobalt%dvm%p_nvmmdz_met(:,:,:,tau) + cobalt%dvm%p_nvmlgz_met(:,:,:,tau) + cobalt%dvm%p_nvmmdz_gut(:,:,:,tau) + &
-          cobalt%dvm%p_nvmlgz_gut(:,:,:,tau)) * rho_dzt(:,:,:)
-     endif
 
     ! dissolved organic component also includes an optional background doc
     cobalt%tot_layer_int_doc(:,:,:) = (cobalt%c_2_n * (cobalt%p_ldon(:,:,:,tau) + cobalt%p_sldon(:,:,:,tau) + &
@@ -6700,32 +6605,17 @@ contains
      cobalt%tot_layer_int_poc(:,:,:) = (cobalt%p_ndi(:,:,:,tau) + cobalt%p_nlg(:,:,:,tau) + cobalt%p_nmd(:,:,:,tau) + &
           cobalt%p_nsm(:,:,:,tau) + cobalt%p_nbact(:,:,:,tau) + cobalt%p_ndet(:,:,:,tau) + cobalt%p_ndet_fast(:,:,:,tau) + &
           cobalt%p_nsmz(:,:,:,tau) + cobalt%p_nmdz(:,:,:,tau) + cobalt%p_nlgz(:,:,:,tau))*cobalt%c_2_n*rho_dzt(:,:,:)
-     if (do_dvm) then
-     cobalt%tot_layer_int_poc(:,:,:) = cobalt%tot_layer_int_poc(:,:,:) + &
-          (cobalt%dvm%p_nvmmdz(:,:,:,tau) + cobalt%dvm%p_nvmlgz(:,:,:,tau) + cobalt%dvm%p_nvmmdz_met(:,:,:,tau) + &
-          cobalt%dvm%p_nvmlgz_met(:,:,:,tau) + cobalt%dvm%p_nvmmdz_gut(:,:,:,tau) + cobalt%dvm%p_nvmlgz_gut(:,:,:,tau))*cobalt%c_2_n*rho_dzt(:,:,:)
-     endif
 
     cobalt%tot_layer_int_dic(:,:,:) = cobalt%p_dic(:,:,:,tau)*rho_dzt(:,:,:)
 
      cobalt%tot_layer_int_fe(:,:,:) = (cobalt%p_fed(:,:,:,tau) + cobalt%p_fedi(:,:,:,tau) + cobalt%p_felg(:,:,:,tau) + &
           cobalt%p_femd(:,:,:,tau) + cobalt%p_fesm(:,:,:,tau) + cobalt%p_fedet(:,:,:,tau)) * rho_dzt(:,:,:)
-     if (do_dvm) then
-     cobalt%tot_layer_int_fe(:,:,:) = cobalt%tot_layer_int_fe(:,:,:) + &
-          (cobalt%dvm%p_fevmmdz_gut(:,:,:,tau) + cobalt%dvm%p_fevmlgz_gut(:,:,:,tau)) * rho_dzt(:,:,:)
-     endif
 
      cobalt%tot_layer_int_n(:,:,:) = (cobalt%p_no3(:,:,:,tau) + cobalt%p_nh4(:,:,:,tau) + cobalt%p_ndi(:,:,:,tau) + &
           cobalt%p_nlg(:,:,:,tau) + cobalt%p_nmd(:,:,:,tau) + cobalt%p_nsm(:,:,:,tau) + cobalt%p_nbact(:,:,:,tau) + &
           cobalt%p_ldon(:,:,:,tau) + cobalt%p_sldon(:,:,:,tau) + cobalt%p_srdon(:,:,:,tau) +  cobalt%p_ndet(:,:,:,tau) + &
           cobalt%p_ndet_fast(:,:,:,tau) + cobalt%p_nsmz(:,:,:,tau) + cobalt%p_nmdz(:,:,:,tau) + cobalt%p_nlgz(:,:,:,tau)) * &
 		 rho_dzt(:,:,:)
-     if (do_dvm) then
-     cobalt%tot_layer_int_n(:,:,:) = cobalt%tot_layer_int_n(:,:,:) + &
-          (cobalt%dvm%p_nvmmdz(:,:,:,tau) + cobalt%dvm%p_nvmlgz(:,:,:,tau) + cobalt%dvm%p_nvmmdz_met(:,:,:,tau) + &
-          cobalt%dvm%p_nvmlgz_met(:,:,:,tau) + cobalt%dvm%p_nvmmdz_gut(:,:,:,tau) + cobalt%dvm%p_nvmlgz_gut(:,:,:,tau)) * &
-		 rho_dzt(:,:,:)
-     endif
 
      cobalt%tot_layer_int_p(:,:,:) = (cobalt%p_po4(:,:,:,tau) + cobalt%p_pdi(:,:,:,tau) + cobalt%p_plg(:,:,:,tau) + &
           cobalt%p_pmd(:,:,:,tau) + cobalt%p_psm(:,:,:,tau) + cobalt%p_ldop(:,:,:,tau) + cobalt%p_sldop(:,:,:,tau) + &
@@ -6733,25 +6623,14 @@ contains
            bact(1)%q_p_2_n*cobalt%p_nbact(:,:,:,tau) + &
           zoo(1)%q_p_2_n*cobalt%p_nsmz(:,:,:,tau) + zoo(2)%q_p_2_n*cobalt%p_nmdz(:,:,:,tau) + &
           zoo(3)%q_p_2_n*cobalt%p_nlgz(:,:,:,tau))*rho_dzt(:,:,:)
-     if (do_dvm) then
-     cobalt%tot_layer_int_p(:,:,:) = cobalt%tot_layer_int_p(:,:,:) + &
-          (zoo(4)%q_p_2_n*cobalt%dvm%p_nvmmdz(:,:,:,tau) + &
-          zoo(5)%q_p_2_n*cobalt%dvm%p_nvmlgz(:,:,:,tau) + &
-          cobalt%dvm%p_pvmmdz_gut(:,:,:,tau) + cobalt%dvm%p_pvmlgz_gut(:,:,:,tau) + &
-          zoo(4)%q_p_2_n*cobalt%dvm%p_nvmmdz_met(:,:,:,tau) + &
-          zoo(5)%q_p_2_n*cobalt%dvm%p_nvmlgz_met(:,:,:,tau))*rho_dzt(:,:,:)
-     endif
 
      cobalt%tot_layer_int_si(:,:,:) = (cobalt%p_sio4(:,:,:,tau) + cobalt%p_silg(:,:,:,tau) + &
           cobalt%p_simd(:,:,:,tau) + cobalt%p_sidet(:,:,:,tau)) * rho_dzt(:,:,:)
-     if (do_dvm) then
-     cobalt%tot_layer_int_si(:,:,:) = cobalt%tot_layer_int_si(:,:,:) + &
-          (cobalt%dvm%p_sivmmdz_gut(:,:,:,tau) + cobalt%dvm%p_sivmlgz_gut(:,:,:,tau)) * rho_dzt(:,:,:)
-     endif
 
     cobalt%tot_layer_int_o2(:,:,:) = cobalt%p_o2(:,:,:,tau)*rho_dzt(:,:,:)
 
     cobalt%tot_layer_int_alk(:,:,:) = cobalt%p_alk(:,:,:,tau)*rho_dzt(:,:,:)
+    if (do_dvm) call dvm_add_layer_integrals(cobalt, zoo, rho_dzt, ilb, jlb, tau)
 
     !
     ! calculate water column vertical integrals for tracers and fluxes (per unit area)
