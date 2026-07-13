@@ -5,6 +5,7 @@
 module COBALT_eco
 
   use cobalt_types
+  use MOM_file_parser, only : get_param, param_file_type
   use g_tracer_utils, only : g_tracer_add, g_tracer_type
   use g_tracer_utils, only : g_send_data, g_tracer_get_common, g_tracer_get_pointer
   use g_tracer_utils, only : g_diag_type
@@ -16,8 +17,232 @@ module COBALT_eco
   public cobalt_eco_add_tracers
   public eco_cobalt_reg_diag
   public eco_cobalt_send_diag
+  public dvm_add_params
 
   contains
+
+  !> Read all Diel Vertical Migration (DVM) namelist parameters into the zooplankton
+  !! and COBALT derived types. Extracted from generic_COBALT user_add_params (Stage 2);
+  !! called only when do_dvm is true.
+  subroutine dvm_add_params(param_file, zoo, cobalt)
+    type(param_file_type),                   intent(in)    :: param_file
+    type(zooplankton), dimension(NUM_ZOO),   intent(inout) :: zoo
+    type(generic_COBALT_type),               intent(inout) :: cobalt
+
+    call get_param(param_file, "generic_COBALT", "q_p_2_n_vmmdz", zoo(4)%q_p_2_n, "Medium migrating zooplankton P:N", &
+                   units="mol P mol N-1", default= 1.0/18.0)
+    call get_param(param_file, "generic_COBALT", "q_p_2_n_vmlgz", zoo(5)%q_p_2_n, "Large migrating zooplankton P:N", &
+                   units="mol P mol N-1", default= 1.0/16.0)
+   call get_param(param_file, "generic_COBALT", "imax_vmmdz", zoo(4)%imax, &
+                   "max ingestion rate for medium migrating zooplankton @ 0 deg. C", units="day-1", default=0.57, scale=I_sperd)
+    call get_param(param_file, "generic_COBALT", "imax_vmlgz", zoo(5)%imax, &
+                   "max ingestion rate for large migrating zooplankton @ 0 deg. C", units="day-1", default= 0.23, scale=I_sperd)
+    call get_param(param_file, "generic_COBALT", "ki_vmmdz", zoo(4)%ki, "half-sat for ingestion by medium migrating zooplankton", &
+                   units="mol N kg-1", default=1.25e-6)
+    call get_param(param_file, "generic_COBALT", "ki_vmlgz", zoo(5)%ki, "half-sat for ingestion by large migrating zooplankton", &
+                   units="mol N kg-1", default=1.25e-6)
+    call get_param(param_file, "generic_COBALT", "ktemp_vmmdz", zoo(4)%ktemp, &
+                   "exponential temperature dependence of medium migrating zooplankton rates", units="deg. C-1", default=0.063)
+    call get_param(param_file, "generic_COBALT", "ktemp_vmlgz", zoo(5)%ktemp, &
+                   "exponential temperature dependence of large migrating zooplankton rates", units="deg. C-1", default=0.063)
+    call get_param(param_file, "generic_COBALT", "dvm_I_thresh_smz", zoo(1)%dvm_I_thresh, "Irradiance threshold for small zooplankton DVM", &
+                   units="W m-2", default=0.0001)
+    call get_param(param_file, "generic_COBALT", "dvm_I_thresh_mdz", zoo(2)%dvm_I_thresh, "Irradiance threshold for medium zooplankton DVM", &
+                   units="W m-2", default=0.0001)
+    call get_param(param_file, "generic_COBALT", "dvm_I_thresh_lgz", zoo(3)%dvm_I_thresh, "Irradiance threshold for large zooplankton DVM", &
+                   units="W m-2", default=0.0001)
+    call get_param(param_file, "generic_COBALT", "dvm_I_thresh_vmmdz", zoo(4)%dvm_I_thresh, "Irradiance threshold for medium migrating zooplankton DVM", &
+                   units="W m-2", default=0.0001)
+    call get_param(param_file, "generic_COBALT", "dvm_I_thresh_vmlgz", zoo(5)%dvm_I_thresh, "Irradiance threshold for large migrating zooplankton DVM", &
+                   units="W m-2", default=0.0001)
+    call get_param(param_file, "generic_COBALT", "swim_max_smz", zoo(1)%swim_max, "Maximum swimming speed for small zooplankton", &
+                   units="m s-1", default=0.0)
+    call get_param(param_file, "generic_COBALT", "swim_max_mdz", zoo(2)%swim_max, "Maximum swimming speed for medium zooplankton", &
+                   units="m s-1", default=0.0)
+    call get_param(param_file, "generic_COBALT", "swim_max_lgz", zoo(3)%swim_max, "Maximum swimming speed for large zooplankton", &
+                   units="m s-1", default=0.0)
+    call get_param(param_file, "generic_COBALT", "swim_max_vmmdz", zoo(4)%swim_max, "Maximum swimming speed for medium migrating zooplankton", &
+                   units="m s-1", default=0.0) ! 0.06
+    call get_param(param_file, "generic_COBALT", "swim_max_vmlgz", zoo(5)%swim_max, "Maximum swimming speed for large migrating zooplankton", &
+                   units="m s-1", default=0.0) ! 0.08
+    call get_param(param_file, "generic_COBALT", "swim_ref_smz", zoo(1)%swim_ref, "Reference swimming speed for small zooplankton", &
+                   units="m s-1", default=0.0)
+    call get_param(param_file, "generic_COBALT", "swim_ref_mdz", zoo(2)%swim_ref, "Reference swimming speed for medium zooplankton", &
+                   units="m s-1", default=0.0)
+    call get_param(param_file, "generic_COBALT", "swim_ref_lgz", zoo(3)%swim_ref, "Reference swimming speed for large zooplankton", &
+                   units="m s-1", default=0.0)
+    call get_param(param_file, "generic_COBALT", "swim_ref_vmmdz", zoo(4)%swim_ref, "Reference swimming speed for medium migrating zooplankton", &
+                   units="m s-1", default=0.12)  ! 0.12
+    call get_param(param_file, "generic_COBALT", "swim_ref_vmlgz", zoo(5)%swim_ref, "Reference swimming speed for large migrating zooplankton", &
+                   units="m s-1", default=0.16)  ! 0.16
+    call get_param(param_file, "generic_COBALT", "k_I_dvm_smz", zoo(1)%k_I_dvm, "Half-saturation irradiance for small zooplankton", &
+                   units="W m-2", default=0.1)
+    call get_param(param_file, "generic_COBALT", "k_I_dvm_mdz", zoo(2)%k_I_dvm, "Half-saturation irradiance for medium zooplankton", &
+                   units="W m-2", default=0.1)
+    call get_param(param_file, "generic_COBALT", "k_I_dvm_lgz", zoo(3)%k_I_dvm, "Half-saturation irradiance for large zooplankton", & 
+                   units="W m-2", default=0.1)
+    call get_param(param_file, "generic_COBALT", "k_I_dvm_vmmdz", zoo(4)%k_I_dvm, "Half-saturation irradiance for medium migrating zooplankton", &
+                   units="W m-2", default=0.1)
+    call get_param(param_file, "generic_COBALT", "k_I_dvm_vmlgz", zoo(5)%k_I_dvm, "Half-saturation irradiance for large migrating zooplankton", &
+                   units="W m-2", default=0.1)
+    call get_param(param_file, "generic_COBALT", "swim_stop_o2_smz", zoo(1)%swim_stop_o2, "Oxygen level to stop swimming for small zooplankton", &
+                   units="mol O2", default=60.0e-6)
+    call get_param(param_file, "generic_COBALT", "swim_stop_o2_mdz", zoo(2)%swim_stop_o2, "Oxygen level to stop swimming for medium zooplankton", &
+                   units="mol O2", default=60.0e-6)
+    call get_param(param_file, "generic_COBALT", "swim_stop_o2_lgz", zoo(3)%swim_stop_o2, "Oxygen level to stop swimming for large zooplankton", & 
+                   units="mol O2", default=60.0e-6)
+    call get_param(param_file, "generic_COBALT", "swim_stop_o2_vmmdz", zoo(4)%swim_stop_o2, "Oxygen level to stop swimming for medium migrating zooplankton", &
+                   units="mol O2", default=60.0e-6)
+    call get_param(param_file, "generic_COBALT", "swim_stop_o2_vmlgz", zoo(5)%swim_stop_o2, "Oxygen level to stop swimming for large migrating zooplankton", &
+                   units="mol O2", default=60.0e-6)
+    call get_param(param_file, "generic_COBALT", "smz_ipa_vmmdz", zoo(1)%ipa_vmmdz, &
+                   "innate availability of medium migrating zooplankton to small zooplankton feeding (0-1)", units="none", &
+                   default=0.0)
+    call get_param(param_file, "generic_COBALT", "smz_ipa_vmlgz", zoo(1)%ipa_vmlgz, &
+                   "innate availability of large migrating zooplankton to small zooplankton feeding (0-1)", units="none", &
+                   default=0.0)
+    call get_param(param_file, "generic_COBALT", "mdz_ipa_vmmdz", zoo(2)%ipa_vmmdz, &
+                   "innate availability of medium migrating zooplankton to medium zooplankton feeding (0-1)", units="none", &
+                   default=0.0)
+    call get_param(param_file, "generic_COBALT", "mdz_ipa_vmlgz", zoo(2)%ipa_vmlgz, &
+                   "innate availability of large migrating zooplankton to medium zooplankton feeding (0-1)", units="none", &
+                   default=0.0)
+    call get_param(param_file, "generic_COBALT", "vmmdz_ipa_smp", zoo(4)%ipa_smp, &
+                   "innate availability of small phytoplankton to medium migrating zooplankton feeding (0-1)", units="none", &
+                   default=0.4)
+    call get_param(param_file, "generic_COBALT", "vmmdz_ipa_mdp", zoo(4)%ipa_mdp, &
+                   "innate availability of medium phytoplankton to medium migrating zooplankton feeding (0-1)", units="none", &
+                   default=1.0)
+    call get_param(param_file, "generic_COBALT", "vmmdz_ipa_lgp", zoo(4)%ipa_lgp, &
+                   "innate availability of large phytoplankton to medium migrating zooplankton feeding (0-1)", units="none", &
+                   default=0.0)
+    call get_param(param_file, "generic_COBALT", "vmmdz_ipa_diaz",zoo(4)%ipa_diaz, &
+                   "innate availability of diazotrophs to medium migrating zooplankton feeding (0-1)", units="none", &
+                   default=0.75)
+    call get_param(param_file, "generic_COBALT", "vmmdz_ipa_smz", zoo(4)%ipa_smz, &
+                   "innate availability of small zooplankton to medium migrating zooplankton feeding (0-1)", units="none", &
+                   default=1.0)
+    call get_param(param_file, "generic_COBALT", "vmmdz_ipa_mdz", zoo(4)%ipa_mdz, &
+                   "innate availability of medium zooplankton to medium migrating zooplankton feeding (0-1)", units="none", &
+                   default=0.0)
+    call get_param(param_file, "generic_COBALT", "vmmdz_ipa_lgz", zoo(4)%ipa_lgz, &
+                   "innate availability of large zooplankton to medium migrating zooplankton feeding (0-1)", units="none", &
+                   default=0.0)
+    call get_param(param_file, "generic_COBALT", "vmmdz_ipa_vmmdz", zoo(4)%ipa_vmmdz, &
+                   "innate availability of medium migrating zooplankton to medium migrating zooplankton feeding (0-1)", units="none", &
+                   default=0.0)
+    call get_param(param_file, "generic_COBALT", "vmmdz_ipa_vmlgz", zoo(4)%ipa_vmlgz, &
+                   "innate availability of large migrating zooplankton to medium migrating zooplankton feeding (0-1)", units="none", &
+                   default=0.0)
+    call get_param(param_file, "generic_COBALT", "vmmdz_ipa_bact", zoo(4)%ipa_bact, &
+                   "innate availability of bacteria to medium migrating zooplankton feeding (0-1)", units="none", default=0.0)
+    call get_param(param_file, "generic_COBALT", "vmmdz_ipa_det", zoo(4)%ipa_det, &
+                   "innate availability of detritus to medium migrating zooplankton feeding (0-1)", units="none", default=0.0)
+       call get_param(param_file, "generic_COBALT", "lgz_ipa_vmmdz", zoo(3)%ipa_vmmdz, &
+                   "innate availability of medium migrating zooplankton to large zooplankton feeding (0-1)", units="none", &
+                   default=1.0)
+    call get_param(param_file, "generic_COBALT", "lgz_ipa_vmlgz", zoo(3)%ipa_vmlgz, &
+                   "innate availability of large migrating zooplankton to large zooplankton feeding (0-1)", units="none", &
+                   default=0.0)
+    call get_param(param_file, "generic_COBALT", "vmlgz_ipa_smp", zoo(5)%ipa_smp, &
+                   "innate availability of small phytoplankton to large migrating zooplankton feeding (0-1)", units="none", &
+                   default=0.0)
+    call get_param(param_file, "generic_COBALT", "vmlgz_ipa_mdp", zoo(5)%ipa_mdp, &
+                   "innate availability of medium phytoplankton to large migrating zooplankton feeding (0-1)", units="none", &
+                   default=0.4)
+    call get_param(param_file, "generic_COBALT", "vmlgz_ipa_lgp", zoo(5)%ipa_lgp, &
+                   "innate availability of large phytoplankton to large migrating zooplankton feeding (0-1)", units="none", &
+                   default=1.0)
+    call get_param(param_file, "generic_COBALT", "vmlgz_ipa_diaz",zoo(5)%ipa_diaz, &
+                   "innate availability of diazotrophs to large migrating zooplankton feeding (0-1)", units="none", &
+                   default=0.4)
+    call get_param(param_file, "generic_COBALT", "vmlgz_ipa_smz", zoo(5)%ipa_smz, &
+                   "innate availability of small zooplankton to large migrating zooplankton feeding (0-1)", units="none", &
+                   default=0.0)
+    call get_param(param_file, "generic_COBALT", "vmlgz_ipa_mdz", zoo(5)%ipa_mdz, &
+                   "innate availability of medium zooplankton to large migrating zooplankton feeding (0-1)", units="none", &
+                   default=1.0)
+    call get_param(param_file, "generic_COBALT", "vmlgz_ipa_lgz", zoo(5)%ipa_lgz, &
+                   "innate availability of large zooplankton to large migrating zooplankton feeding (0-1)", units="none", &
+                   default=0.0)
+    call get_param(param_file, "generic_COBALT", "vmlgz_ipa_vmmdz", zoo(5)%ipa_vmmdz, &
+                   "innate availability of medium migrating zooplankton to large migrating zooplankton feeding (0-1)", units="none", &
+                   default=1.0)
+    call get_param(param_file, "generic_COBALT", "vmlgz_ipa_vmlgz", zoo(5)%ipa_vmlgz, &
+                   "innate availability of large migrating zooplankton to large migrating zooplankton feeding (0-1)", units="none", &
+                   default=0.0)
+    call get_param(param_file, "generic_COBALT", "vmlgz_ipa_bact",zoo(5)%ipa_bact, &
+                   "innate availability of bacteria to large migrating zooplankton feeding (0-1)", units="none", default=0.0)
+    call get_param(param_file, "generic_COBALT", "vmlgz_ipa_det", zoo(5)%ipa_det, &
+                   "innate availability of detritus to large migrating zooplankton feeding (0-1)", units="none", default=0.0)
+    call get_param(param_file, "generic_COBALT", "nswitch_vmmdz", zoo(4)%nswitch, &
+                   "prey switching parameter 1 for medium migrating zooplankton", units="none", default=2.0)
+    call get_param(param_file, "generic_COBALT", "nswitch_vmlgz", zoo(5)%nswitch, &
+                   "prey switching parameter 1 for large migrating zooplankton", units="none", default=2.0)
+    call get_param(param_file, "generic_COBALT", "mswitch_vmmdz", zoo(4)%mswitch, &
+                   "prey switching parameter 2 for medium migrating zooplankton", units="none", default=2.0)
+    call get_param(param_file, "generic_COBALT", "mswitch_vmlgz", zoo(5)%mswitch, &
+                   "prey switching parameter 2 for large migrating zooplankton", units="none", default=2.0)
+    call get_param(param_file, "generic_COBALT", "gge_max_vmmdz",zoo(4)%gge_max, &
+                   "maximum gross growth efficiency for medium migrating zooplankton", units="none", default=0.4)
+    call get_param(param_file, "generic_COBALT", "gge_max_vmlgz",zoo(5)%gge_max, &
+                   "maximum gross growth efficiency for large migrating zooplankton", units="none", default=0.4)
+    call get_param(param_file, "generic_COBALT", "bresp_vmmdz", zoo(4)%bresp, &
+                   "basal respiration rate for medium migrating zooplankton", units="day-1", default=0.008,scale=I_sperd)
+    call get_param(param_file, "generic_COBALT", "bresp_vmlgz", zoo(5)%bresp, &
+                   "basal respiration rate for large migrating zooplankton", units="day-1", default=0.0032, scale=I_sperd)
+    call get_param(param_file, "generic_COBALT", "phi_det_vmmdz", zoo(4)%phi_det, &
+                   "fraction of ingestion by medium migrating zooplankton to detritus", units="none", default=0.15)
+    call get_param(param_file, "generic_COBALT", "phi_det_vmlgz", zoo(5)%phi_det, &
+                   "fraction of ingestion by large migrating zooplankton to detritus", units="none", default=0.30)
+    call get_param(param_file, "generic_COBALT", "phi_ldon_vmmdz", zoo(4)%phi_ldon, &
+                   "fraction of N ingestion by medium migrating zooplankton to labile dissolved organic nitrogen", &
+                   units="none", default=0.625*(0.30-zoo(4)%phi_det))
+    call get_param(param_file, "generic_COBALT", "phi_ldon_vmlgz", zoo(5)%phi_ldon, &
+                   "fraction of N ingestion by large migrating zooplankton to labile dissolved organic nitrogen", &
+                   units="none", default=0.625*(0.30-zoo(5)%phi_det))
+    call get_param(param_file, "generic_COBALT", "phi_ldop_vmmdz", zoo(4)%phi_ldop, &
+                   "fraction of P ingestion by medium migrating zooplankton to labile dissolved organic phosphorus", &
+                   units="none", default=0.575*(0.30-zoo(4)%phi_det))
+    call get_param(param_file, "generic_COBALT", "phi_ldop_vmlgz", zoo(5)%phi_ldop, &
+                   "fraction of P ingestion by large migrating zooplankton to labile dissolved organic phosphorus", &
+                   units="none", default=0.575*(0.30-zoo(5)%phi_det))
+    call get_param(param_file, "generic_COBALT", "phi_srdon_vmmdz", zoo(4)%phi_srdon, &
+                   "fraction of N ingestion by medium migrating zooplankton to semi-refractory dissolved organic nitrogen", &
+                   units="none", default=0.075*(0.30-zoo(4)%phi_det))
+    call get_param(param_file, "generic_COBALT", "phi_srdon_vmlgz", zoo(5)%phi_srdon, &
+                   "fraction of N ingestion by large migrating zooplankton to semi-refractory dissolved organic nitrogen", &
+                   units="none", default=0.075*(0.30-zoo(5)%phi_det))
+    call get_param(param_file, "generic_COBALT", "phi_srdop_vmmdz", zoo(4)%phi_srdop, &
+                   "fraction of P ingestion by medium migrating zooplankton to semi-refractory dissolved organic phosphorus", &
+                   units="none", default=0.125*(0.30-zoo(4)%phi_det))
+    call get_param(param_file, "generic_COBALT", "phi_srdop_vmlgz", zoo(5)%phi_srdop, &
+                   "fraction of P ingestion by large migrating zooplankton to semi-refractory dissolved organic phosphorus", &
+                   units="none", default=0.125*(0.30-zoo(5)%phi_det))
+    call get_param(param_file, "generic_COBALT", "phi_sldon_vmmdz", zoo(4)%phi_sldon, &
+                   "fraction of N ingestion by medium migrating zooplankton to semi-labile dissolved organic nitrogen", &
+                   units="none", default=0.3*(0.30-zoo(4)%phi_det))
+    call get_param(param_file, "generic_COBALT", "phi_sldon_vmlgz", zoo(5)%phi_sldon, &
+                   "fraction of N ingestion by large migrating zooplankton to semi-labile dissolved organic nitrogen", &
+                   units="none", default=0.3*(0.30-zoo(5)%phi_det))
+    call get_param(param_file, "generic_COBALT", "phi_sldop_vmmdz", zoo(4)%phi_sldop, &
+                   "fraction of P ingestion by medium migrating zooplankton to semi-labile dissolved organic phosphorus", &
+                   units="none", default=0.3*(0.30-zoo(4)%phi_det))
+    call get_param(param_file, "generic_COBALT", "phi_sldop_vmlgz", zoo(5)%phi_sldop, &
+                   "fraction of P ingestion by large migrating zooplankton to semi-labile dissolved organic phosphorus", &
+                   units="none", default=0.3*(0.30-zoo(5)%phi_det))
+    call get_param(param_file, "generic_COBALT", "phi_det_si_vmmdz", zoo(4)%phi_det_si, &
+                   "fraction of silica ingestion by medium migrating zooplankton to si detritus", units="none", default=0.15)
+    call get_param(param_file, "generic_COBALT", "phi_det_si_vmlgz", zoo(5)%phi_det_si, &
+                   "fraction of silica ingestion by large migrating zooplankton to si detritus", units="none", default=0.30)
+    call get_param(param_file, "generic_COBALT", "hp_ipa_vmmdz", cobalt%hp_ipa_vmmdz, &
+                   "innate availability of medium migrating zooplankton to higher predator feeding (0-1)", units="none", &
+                   default=1.0)
+    call get_param(param_file, "generic_COBALT", "hp_ipa_vmlgz", cobalt%hp_ipa_vmlgz, &
+                   "innate availability of large migrating zooplankton to higher predator feeding (0-1)", units="none", &
+                   default=1.0)
+
+  end subroutine dvm_add_params
 
   !> Register DVM-specific prognostic tracers for migrating zooplankton groups.
   !! These tracers are always registered (NUM_ZOO=5 is fixed) but their DVM-specific
