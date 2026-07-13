@@ -15,7 +15,7 @@
 module COBALT_send_diag
 
   use cobalt_types
-  use COBALT_eco, only: eco_cobalt_send_diag
+  use COBALT_eco, only: eco_cobalt_send_diag, dvm_add_layer_integrals
 
   use time_manager_mod,  only: time_type
 
@@ -567,6 +567,12 @@ module COBALT_send_diag
 
           cobalt%tot_layer_int_alk(:,:,:) = cobalt%p_alk(:,:,:,tau)*rho_dzt(:,:,:)
 
+          ! Add migrating-zooplankton biomass/gut/metabolite to the c, poc, fe, n, p, si
+          ! layer integrals (only when DVM is active). Reuses the Stage-6 routine, which
+          ! applies the contribution per cell (:,:,:); this deliberately corrects the
+          ! scalar-index broadcast present in mpoupon's original send_diag code.
+          if (do_dvm) call dvm_add_layer_integrals(cobalt, zoo, rho_dzt, ilb, jlb, tau)
+
           do j = jsc, jec ; do i = isc, iec !{
             cobalt%wc_vert_int_c(i,j) = 0.0
             cobalt%wc_vert_int_dic(i,j) = 0.0
@@ -927,9 +933,17 @@ module COBALT_send_diag
           used = g_send_data(cobalt%id_phyc, (cobalt%p_nlg(:,:,:,tau) + cobalt%p_nmd(:,:,:,tau) + &
             cobalt%p_nsm(:,:,:,tau) + cobalt%p_ndi(:,:,:,tau)) * cobalt%c_2_n * cobalt%Rho_0, &
             model_time, rmask = grid_tmask, is_in=isc, js_in=jsc, ks_in=1,ie_in=iec, je_in=jec, ke_in=nk)
-          used = g_send_data(cobalt%id_zooc, (cobalt%p_nlgz(:,:,:,tau) + cobalt%p_nmdz(:,:,:,tau) + &
-            cobalt%p_nsmz(:,:,:,tau)) * cobalt%c_2_n * cobalt%Rho_0, &
-            model_time, rmask = grid_tmask,is_in=isc, js_in=jsc, ks_in=1,ie_in=iec, je_in=jec, ke_in=nk)
+          if (do_dvm) then
+            used = g_send_data(cobalt%id_zooc, (cobalt%p_nlgz(:,:,:,tau) + cobalt%p_nmdz(:,:,:,tau) + &
+              cobalt%p_nsmz(:,:,:,tau)+cobalt%dvm%p_nvmlgz(:,:,:,tau) + cobalt%dvm%p_nvmmdz(:,:,:,tau)+&
+              cobalt%dvm%p_nvmlgz_met(:,:,:,tau)+cobalt%dvm%p_nvmmdz_met(:,:,:,tau)+&
+              cobalt%dvm%p_nvmlgz_gut(:,:,:,tau)+cobalt%dvm%p_nvmmdz_gut(:,:,:,tau)) * cobalt%c_2_n * cobalt%Rho_0, &
+              model_time, rmask = grid_tmask,is_in=isc, js_in=jsc, ks_in=1,ie_in=iec, je_in=jec, ke_in=nk)
+          else
+            used = g_send_data(cobalt%id_zooc, (cobalt%p_nlgz(:,:,:,tau) + cobalt%p_nmdz(:,:,:,tau) + &
+              cobalt%p_nsmz(:,:,:,tau)) * cobalt%c_2_n * cobalt%Rho_0, &
+              model_time, rmask = grid_tmask,is_in=isc, js_in=jsc, ks_in=1,ie_in=iec, je_in=jec, ke_in=nk)
+          endif
           used = g_send_data(cobalt%id_bacc,  cobalt%p_nbact(:,:,:,tau) * cobalt%c_2_n * cobalt%Rho_0, &
             model_time, rmask = grid_tmask, is_in=isc, js_in=jsc, ks_in=1,ie_in=iec, je_in=jec, ke_in=nk)
           used = g_send_data(cobalt%id_detoc, (cobalt%p_ndet(:,:,:,tau) + cobalt%p_ndet_fast(:,:,:,tau)) * cobalt%c_2_n * cobalt%Rho_0, &
@@ -950,8 +964,15 @@ module COBALT_send_diag
             model_time, rmask = grid_tmask, is_in=isc, js_in=jsc, ks_in=1,ie_in=iec, je_in=jec, ke_in=nk)
           used = g_send_data(cobalt%id_zmicro,  cobalt%p_nsmz(:,:,:,tau) * cobalt%c_2_n * cobalt%Rho_0, &
             model_time, rmask = grid_tmask, is_in=isc, js_in=jsc, ks_in=1,ie_in=iec, je_in=jec, ke_in=nk)
-          used = g_send_data(cobalt%id_zmeso,  (cobalt%p_nlgz(:,:,:,tau)+cobalt%p_nmdz(:,:,:,tau)) * cobalt%c_2_n * cobalt%Rho_0, &
-            model_time, rmask = grid_tmask, is_in=isc, js_in=jsc, ks_in=1,ie_in=iec, je_in=jec, ke_in=nk)
+          if (do_dvm) then
+            used = g_send_data(cobalt%id_zmeso,  (cobalt%p_nlgz(:,:,:,tau)+cobalt%p_nmdz(:,:,:,tau)+cobalt%dvm%p_nvmlgz(:,:,:,tau)+&
+              cobalt%dvm%p_nvmmdz(:,:,:,tau)+cobalt%dvm%p_nvmlgz_met(:,:,:,tau)+cobalt%dvm%p_nvmmdz_met(:,:,:,tau)+ &
+              cobalt%dvm%p_nvmlgz_gut(:,:,:,tau)+cobalt%dvm%p_nvmmdz_gut(:,:,:,tau)) * cobalt%c_2_n * cobalt%Rho_0, &
+              model_time, rmask = grid_tmask, is_in=isc, js_in=jsc, ks_in=1,ie_in=iec, je_in=jec, ke_in=nk)
+          else
+            used = g_send_data(cobalt%id_zmeso,  (cobalt%p_nlgz(:,:,:,tau)+cobalt%p_nmdz(:,:,:,tau)) * cobalt%c_2_n * cobalt%Rho_0, &
+              model_time, rmask = grid_tmask, is_in=isc, js_in=jsc, ks_in=1,ie_in=iec, je_in=jec, ke_in=nk)
+          endif
           ! alkalinity, pH, Carbonate system and O2
           used = g_send_data(cobalt%id_talk, cobalt%p_alk(:,:,:,tau) * cobalt%Rho_0, &
             model_time, rmask = grid_tmask, is_in=isc, js_in=jsc, ks_in=1,ie_in=iec, je_in=jec, ke_in=nk)
@@ -996,32 +1017,78 @@ module COBALT_send_diag
             model_time, rmask = grid_tmask, is_in=isc, js_in=jsc, ks_in=1,ie_in=iec, je_in=jec, ke_in=nk)
 
           ! Aggregate Particulate C, N, P, Fe and Si pools
-          used = g_send_data(cobalt%id_poc, (cobalt%p_ndi(:,:,:,tau) + cobalt%p_nlg(:,:,:,tau) + &
-            cobalt%p_nmd(:,:,:,tau) + cobalt%p_nsm(:,:,:,tau) + cobalt%p_nbact(:,:,:,tau) + &
-            cobalt%p_ndet(:,:,:,tau) + cobalt%p_ndet_fast(:,:,:,tau) + cobalt%p_nsmz(:,:,:,tau) + &
-            cobalt%p_nmdz(:,:,:,tau) + cobalt%p_nlgz(:,:,:,tau)) * cobalt%Rho_0 * cobalt%c_2_n, &
-            model_time, rmask = grid_tmask, is_in=isc, js_in=jsc, ks_in=1,ie_in=iec, je_in=jec, ke_in=nk)
+          if (do_dvm) then
+            used = g_send_data(cobalt%id_poc, (cobalt%p_ndi(:,:,:,tau) + cobalt%p_nlg(:,:,:,tau) + &
+              cobalt%p_nmd(:,:,:,tau) + cobalt%p_nsm(:,:,:,tau) + cobalt%p_nbact(:,:,:,tau) + &
+              cobalt%p_ndet(:,:,:,tau) + cobalt%p_ndet_fast(:,:,:,tau) + cobalt%p_nsmz(:,:,:,tau) + &
+              cobalt%p_nmdz(:,:,:,tau) + cobalt%p_nlgz(:,:,:,tau)+ &
+              cobalt%dvm%p_nvmmdz(:,:,:,tau) + cobalt%dvm%p_nvmlgz(:,:,:,tau)+ &
+              cobalt%dvm%p_nvmmdz_gut(:,:,:,tau) + cobalt%dvm%p_nvmlgz_gut(:,:,:,tau)+ &
+              cobalt%dvm%p_nvmmdz_met(:,:,:,tau) + cobalt%dvm%p_nvmlgz_met(:,:,:,tau)) * cobalt%Rho_0 * cobalt%c_2_n, &
+              model_time, rmask = grid_tmask, is_in=isc, js_in=jsc, ks_in=1,ie_in=iec, je_in=jec, ke_in=nk)
+          else
+            used = g_send_data(cobalt%id_poc, (cobalt%p_ndi(:,:,:,tau) + cobalt%p_nlg(:,:,:,tau) + &
+              cobalt%p_nmd(:,:,:,tau) + cobalt%p_nsm(:,:,:,tau) + cobalt%p_nbact(:,:,:,tau) + &
+              cobalt%p_ndet(:,:,:,tau) + cobalt%p_ndet_fast(:,:,:,tau) + cobalt%p_nsmz(:,:,:,tau) + &
+              cobalt%p_nmdz(:,:,:,tau) + cobalt%p_nlgz(:,:,:,tau)) * cobalt%Rho_0 * cobalt%c_2_n, &
+              model_time, rmask = grid_tmask, is_in=isc, js_in=jsc, ks_in=1,ie_in=iec, je_in=jec, ke_in=nk)
+          endif
 
 
-          used = g_send_data(cobalt%id_pon, (cobalt%p_ndi(:,:,:,tau) + cobalt%p_nlg(:,:,:,tau) + &
-            cobalt%p_nmd(:,:,:,tau) + cobalt%p_nsm(:,:,:,tau) + cobalt%p_nbact(:,:,:,tau) + &
-  	        cobalt%p_ndet(:,:,:,tau) + cobalt%p_ndet_fast(:,:,:,tau) + cobalt%p_nsmz(:,:,:,tau) + &
-            cobalt%p_nmdz(:,:,:,tau) + cobalt%p_nlgz(:,:,:,tau)) * cobalt%Rho_0, &
-            model_time, rmask = grid_tmask, is_in=isc, js_in=jsc, ks_in=1,ie_in=iec, je_in=jec, ke_in=nk)
+          if (do_dvm) then
+            used = g_send_data(cobalt%id_pon, (cobalt%p_ndi(:,:,:,tau) + cobalt%p_nlg(:,:,:,tau) + &
+              cobalt%p_nmd(:,:,:,tau) + cobalt%p_nsm(:,:,:,tau) + cobalt%p_nbact(:,:,:,tau) + &
+              cobalt%p_ndet(:,:,:,tau) + cobalt%p_ndet_fast(:,:,:,tau) + cobalt%p_nsmz(:,:,:,tau) + &
+              cobalt%p_nmdz(:,:,:,tau) + cobalt%p_nlgz(:,:,:,tau) + &
+              cobalt%dvm%p_nvmmdz(:,:,:,tau) + cobalt%dvm%p_nvmlgz(:,:,:,tau)+ &
+              cobalt%dvm%p_nvmmdz_gut(:,:,:,tau) + cobalt%dvm%p_nvmlgz_gut(:,:,:,tau)+ &
+              cobalt%dvm%p_nvmmdz_met(:,:,:,tau) + cobalt%dvm%p_nvmlgz_met(:,:,:,tau)) * cobalt%Rho_0, &
+              model_time, rmask = grid_tmask, is_in=isc, js_in=jsc, ks_in=1,ie_in=iec, je_in=jec, ke_in=nk)
+          else
+            used = g_send_data(cobalt%id_pon, (cobalt%p_ndi(:,:,:,tau) + cobalt%p_nlg(:,:,:,tau) + &
+              cobalt%p_nmd(:,:,:,tau) + cobalt%p_nsm(:,:,:,tau) + cobalt%p_nbact(:,:,:,tau) + &
+  	          cobalt%p_ndet(:,:,:,tau) + cobalt%p_ndet_fast(:,:,:,tau) + cobalt%p_nsmz(:,:,:,tau) + &
+              cobalt%p_nmdz(:,:,:,tau) + cobalt%p_nlgz(:,:,:,tau)) * cobalt%Rho_0, &
+              model_time, rmask = grid_tmask, is_in=isc, js_in=jsc, ks_in=1,ie_in=iec, je_in=jec, ke_in=nk)
+          endif
 
+          if (do_dvm) then
+            used = g_send_data(cobalt%id_pop, (cobalt%p_pdi(:,:,:,tau) + cobalt%p_plg(:,:,:,tau) + &
+              cobalt%p_pmd(:,:,:,tau) + cobalt%p_psm(:,:,:,tau) + bact(1)%q_p_2_n * cobalt%p_nbact(:,:,:,tau) + &
+              cobalt%p_pdet(:,:,:,tau) + cobalt%p_pdet_fast(:,:,:,tau) + zoo(1)%q_p_2_n * cobalt%p_nsmz(:,:,:,tau) + &
+              zoo(2)%q_p_2_n * cobalt%p_nmdz(:,:,:,tau) + zoo(3)%q_p_2_n * cobalt%p_nlgz(:,:,:,tau) + &
+              zoo(4)%q_p_2_n * cobalt%dvm%p_nvmmdz(:,:,:,tau) + zoo(5)%q_p_2_n * cobalt%dvm%p_nvmlgz(:,:,:,tau) + &
+              zoo(4)%q_p_2_n * cobalt%dvm%p_nvmmdz_met(:,:,:,tau) + zoo(5)%q_p_2_n * cobalt%dvm%p_nvmlgz_met(:,:,:,tau) + &
+              cobalt%dvm%p_pvmmdz_gut(:,:,:,tau) + cobalt%dvm%p_pvmlgz_gut(:,:,:,tau)) * cobalt%Rho_0, &
+              model_time, rmask = grid_tmask,is_in=isc, js_in=jsc, ks_in=1,ie_in=iec, je_in=jec, ke_in=nk)
+          else
           used = g_send_data(cobalt%id_pop, (cobalt%p_pdi(:,:,:,tau) + cobalt%p_plg(:,:,:,tau) + &
             cobalt%p_pmd(:,:,:,tau) + cobalt%p_psm(:,:,:,tau) + bact(1)%q_p_2_n * cobalt%p_nbact(:,:,:,tau) + &
             cobalt%p_pdet(:,:,:,tau) + cobalt%p_pdet_fast(:,:,:,tau) + zoo(1)%q_p_2_n * cobalt%p_nsmz(:,:,:,tau) + &
 			      zoo(2)%q_p_2_n * cobalt%p_nmdz(:,:,:,tau) + zoo(3)%q_p_2_n * cobalt%p_nlgz(:,:,:,tau)) * cobalt%Rho_0, &
             model_time, rmask = grid_tmask,is_in=isc, js_in=jsc, ks_in=1,ie_in=iec, je_in=jec, ke_in=nk)
+          endif
 
-          used = g_send_data(cobalt%id_bfe, (cobalt%p_fedi(:,:,:,tau) + cobalt%p_felg(:,:,:,tau) + &
-            cobalt%p_femd(:,:,:,tau) + cobalt%p_fesm(:,:,:,tau) + cobalt%p_fedet(:,:,:,tau))*cobalt%Rho_0, &
-            model_time, rmask = grid_tmask,is_in=isc, js_in=jsc, ks_in=1,ie_in=iec, je_in=jec, ke_in=nk)
+          if (do_dvm) then
+            used = g_send_data(cobalt%id_bfe, (cobalt%p_fedi(:,:,:,tau) + cobalt%p_felg(:,:,:,tau) + &
+              cobalt%p_femd(:,:,:,tau) + cobalt%p_fesm(:,:,:,tau) + cobalt%p_fedet(:,:,:,tau) + &
+              cobalt%dvm%p_fevmmdz_gut(:,:,:,tau) + cobalt%dvm%p_fevmlgz_gut(:,:,:,tau))*cobalt%Rho_0, &
+              model_time, rmask = grid_tmask,is_in=isc, js_in=jsc, ks_in=1,ie_in=iec, je_in=jec, ke_in=nk)
+          else
+            used = g_send_data(cobalt%id_bfe, (cobalt%p_fedi(:,:,:,tau) + cobalt%p_felg(:,:,:,tau) + &
+              cobalt%p_femd(:,:,:,tau) + cobalt%p_fesm(:,:,:,tau) + cobalt%p_fedet(:,:,:,tau))*cobalt%Rho_0, &
+              model_time, rmask = grid_tmask,is_in=isc, js_in=jsc, ks_in=1,ie_in=iec, je_in=jec, ke_in=nk)
+          endif
 
-          used = g_send_data(cobalt%id_bsi, (cobalt%p_silg(:,:,:,tau) + cobalt%p_simd(:,:,:,tau) + &
-            cobalt%p_sidet(:,:,:,tau)) * cobalt%Rho_0, &
-            model_time, rmask = grid_tmask, is_in=isc, js_in=jsc, ks_in=1,ie_in=iec, je_in=jec, ke_in=nk)
+          if (do_dvm) then
+            used = g_send_data(cobalt%id_bsi, (cobalt%p_silg(:,:,:,tau) + cobalt%p_simd(:,:,:,tau) + &
+              cobalt%p_sidet(:,:,:,tau) + cobalt%dvm%p_sivmmdz_gut(:,:,:,tau) + cobalt%dvm%p_sivmlgz_gut(:,:,:,tau)) * cobalt%Rho_0, &
+              model_time, rmask = grid_tmask, is_in=isc, js_in=jsc, ks_in=1,ie_in=iec, je_in=jec, ke_in=nk)
+          else
+            used = g_send_data(cobalt%id_bsi, (cobalt%p_silg(:,:,:,tau) + cobalt%p_simd(:,:,:,tau) + &
+              cobalt%p_sidet(:,:,:,tau)) * cobalt%Rho_0, &
+              model_time, rmask = grid_tmask, is_in=isc, js_in=jsc, ks_in=1,ie_in=iec, je_in=jec, ke_in=nk)
+          endif
 
           ! Phytoplankton partitioned by nutrients
           used = g_send_data(cobalt%id_phyn, (cobalt%p_nlg(:,:,:,tau) + cobalt%p_nmd(:,:,:,tau) +  &
@@ -1175,9 +1242,17 @@ module COBALT_send_diag
           used = g_send_data(cobalt%id_phycos, (cobalt%p_nlg(:,:,1,tau) + cobalt%p_nmd(:,:,1,tau) +  &
             cobalt%p_nsm(:,:,1,tau) + cobalt%p_ndi(:,:,1,tau)) * cobalt%c_2_n * cobalt%Rho_0, &
             model_time, rmask = grid_tmask(:,:,1), is_in=isc, js_in=jsc, ie_in=iec, je_in=jec)
-          used = g_send_data(cobalt%id_zoocos, (cobalt%p_nlgz(:,:,1,tau) + cobalt%p_nsmz(:,:,1,tau) +  &
-            cobalt%p_nmdz(:,:,1,tau)) * cobalt%c_2_n * cobalt%Rho_0, &
-            model_time, rmask = grid_tmask(:,:,1), is_in=isc, js_in=jsc, ie_in=iec, je_in=jec)
+          if (do_dvm) then
+            used = g_send_data(cobalt%id_zoocos, (cobalt%p_nlgz(:,:,1,tau) + cobalt%p_nsmz(:,:,1,tau) +  &
+              cobalt%p_nmdz(:,:,1,tau) + cobalt%dvm%p_nvmmdz(:,:,1,tau) + cobalt%dvm%p_nvmlgz(:,:,1,tau) + &
+              cobalt%dvm%p_nvmmdz_met(:,:,1,tau) + cobalt%dvm%p_nvmlgz_met(:,:,1,tau) + &
+              cobalt%dvm%p_nvmmdz_gut(:,:,1,tau) + cobalt%dvm%p_nvmlgz_gut(:,:,1,tau)) * cobalt%c_2_n * cobalt%Rho_0, &
+              model_time, rmask = grid_tmask(:,:,1), is_in=isc, js_in=jsc, ie_in=iec, je_in=jec)
+          else
+            used = g_send_data(cobalt%id_zoocos, (cobalt%p_nlgz(:,:,1,tau) + cobalt%p_nsmz(:,:,1,tau) +  &
+              cobalt%p_nmdz(:,:,1,tau)) * cobalt%c_2_n * cobalt%Rho_0, &
+              model_time, rmask = grid_tmask(:,:,1), is_in=isc, js_in=jsc, ie_in=iec, je_in=jec)
+          endif
           used = g_send_data(cobalt%id_baccos, cobalt%p_nbact(:,:,1,tau) * cobalt%c_2_n * cobalt%Rho_0,  &
             model_time, rmask = grid_tmask(:,:,1), is_in=isc, js_in=jsc, ie_in=iec, je_in=jec)
           used = g_send_data(cobalt%id_detocos, (cobalt%p_ndet(:,:,1,tau) + cobalt%p_ndet_fast(:,:,1,tau)) * cobalt%c_2_n * cobalt%Rho_0,  &
@@ -1200,8 +1275,16 @@ module COBALT_send_diag
             is_in=isc, js_in=jsc, ie_in=iec, je_in=jec)
           used = g_send_data(cobalt%id_zmicroos, cobalt%p_nsmz(:,:,1,tau) * cobalt%c_2_n * cobalt%Rho_0, &
             model_time, rmask = grid_tmask(:,:,1), is_in=isc, js_in=jsc, ie_in=iec, je_in=jec)
-          used = g_send_data(cobalt%id_zmesoos, (cobalt%p_nlgz(:,:,1,tau)+cobalt%p_nmdz(:,:,1,tau)) * cobalt%c_2_n * cobalt%Rho_0, model_time, rmask = grid_tmask(:,:,1), &
-            is_in=isc, js_in=jsc, ie_in=iec, je_in=jec)
+          if (do_dvm) then
+            used = g_send_data(cobalt%id_zmesoos, (cobalt%p_nlgz(:,:,1,tau)+cobalt%p_nmdz(:,:,1,tau)+&
+              cobalt%dvm%p_nvmmdz(:,:,1,tau)+cobalt%dvm%p_nvmlgz(:,:,1,tau)+ &
+              cobalt%dvm%p_nvmmdz_gut(:,:,1,tau)+cobalt%dvm%p_nvmlgz_gut(:,:,1,tau) +&
+              cobalt%dvm%p_nvmmdz_met(:,:,1,tau)+cobalt%dvm%p_nvmlgz_met(:,:,1,tau)) * cobalt%c_2_n * cobalt%Rho_0, model_time, rmask = grid_tmask(:,:,1), &
+              is_in=isc, js_in=jsc, ie_in=iec, je_in=jec)
+          else
+            used = g_send_data(cobalt%id_zmesoos, (cobalt%p_nlgz(:,:,1,tau)+cobalt%p_nmdz(:,:,1,tau)) * cobalt%c_2_n * cobalt%Rho_0, model_time, rmask = grid_tmask(:,:,1), &
+              is_in=isc, js_in=jsc, ie_in=iec, je_in=jec)
+          endif
           used = g_send_data(cobalt%id_talkos,  cobalt%p_alk(:,:,1,tau) * cobalt%Rho_0, &
             model_time, rmask = grid_tmask(:,:,1), is_in=isc, js_in=jsc, ie_in=iec, je_in=jec)
           used = g_send_data(cobalt%id_phos,  log10(cobalt%f_htotal(:,:,1)+epsln) * (-1.0), &
@@ -1236,18 +1319,39 @@ module COBALT_send_diag
           used = g_send_data(cobalt%id_chlmiscos,  (phyto(LARGE)%theta(:,:,1) * cobalt%nlg_misc(:,:,1) + &
             phyto(MEDIUM)%theta(:,:,1) * cobalt%nmd_misc(:,:,1)) * cobalt%c_2_n * cobalt%Rho_0 * 12.0e-3, &
             model_time, rmask = grid_tmask(:,:,1), is_in=isc, js_in=jsc, ie_in=iec, je_in=jec)
-          
+          if (do_dvm) then
             used = g_send_data(cobalt%id_ponos, (cobalt%p_ndi(:,:,1,tau) + cobalt%p_nlg(:,:,1,tau) + &
-            cobalt%p_nmd(:,:,1,tau) + cobalt%p_nsm(:,:,1,tau) + cobalt%p_nbact(:,:,1,tau) + &
-  	        cobalt%p_ndet(:,:,1,tau) + cobalt%p_ndet_fast(:,:,1,tau) + cobalt%p_nsmz(:,:,1,tau) + &
-            cobalt%p_nmdz(:,:,1,tau) + cobalt%p_nlgz(:,:,1,tau)) * cobalt%Rho_0, &
-            model_time, rmask = grid_tmask(:,:,1), is_in=isc, js_in=jsc, ie_in=iec, je_in=jec)
+              cobalt%p_nmd(:,:,1,tau) + cobalt%p_nsm(:,:,1,tau) + cobalt%p_nbact(:,:,1,tau) + &
+              cobalt%p_ndet(:,:,1,tau) + cobalt%p_ndet_fast(:,:,1,tau) + cobalt%p_nsmz(:,:,1,tau) + &
+              cobalt%p_nmdz(:,:,1,tau) + cobalt%p_nlgz(:,:,1,tau)+&
+              cobalt%dvm%p_nvmmdz(:,:,1,tau)+cobalt%dvm%p_nvmlgz(:,:,1,tau)+ &
+              cobalt%dvm%p_nvmmdz_gut(:,:,1,tau)+cobalt%dvm%p_nvmlgz_gut(:,:,1,tau)+ &
+              cobalt%dvm%p_nvmmdz_met(:,:,1,tau)+cobalt%dvm%p_nvmlgz_met(:,:,1,tau)) * cobalt%Rho_0, &
+              model_time, rmask = grid_tmask(:,:,1), is_in=isc, js_in=jsc, ie_in=iec, je_in=jec)
+          else
+            used = g_send_data(cobalt%id_ponos, (cobalt%p_ndi(:,:,1,tau) + cobalt%p_nlg(:,:,1,tau) + &
+              cobalt%p_nmd(:,:,1,tau) + cobalt%p_nsm(:,:,1,tau) + cobalt%p_nbact(:,:,1,tau) + &
+              cobalt%p_ndet(:,:,1,tau) + cobalt%p_ndet_fast(:,:,1,tau) + cobalt%p_nsmz(:,:,1,tau) + &
+              cobalt%p_nmdz(:,:,1,tau) + cobalt%p_nlgz(:,:,1,tau)) * cobalt%Rho_0, &
+              model_time, rmask = grid_tmask(:,:,1), is_in=isc, js_in=jsc, ie_in=iec, je_in=jec)
+          endif
 
+          if (do_dvm) then
+            used = g_send_data(cobalt%id_popos, (cobalt%p_pdi(:,:,1,tau) + cobalt%p_plg(:,:,1,tau) + &
+              cobalt%p_pmd(:,:,1,tau) + cobalt%p_psm(:,:,1,tau) + bact(1)%q_p_2_n * cobalt%p_nbact(:,:,1,tau) + &
+              cobalt%p_pdet(:,:,1,tau) + cobalt%p_pdet_fast(:,:,1,tau) + zoo(1)%q_p_2_n * cobalt%p_nsmz(:,:,1,tau) + &
+              zoo(2)%q_p_2_n * cobalt%p_nmdz(:,:,1,tau) + zoo(3)%q_p_2_n * cobalt%p_nlgz(:,:,1,tau)+&
+              zoo(4)%q_p_2_n * cobalt%dvm%p_nvmmdz(:,:,1,tau)+zoo(5)%q_p_2_n * cobalt%dvm%p_nvmlgz(:,:,1,tau)+ &
+              cobalt%dvm%p_pvmmdz_gut(:,:,1,tau)+cobalt%dvm%p_pvmlgz_gut(:,:,1,tau)+ &
+              zoo(4)%q_p_2_n * cobalt%dvm%p_nvmmdz_met(:,:,1,tau)+zoo(5)%q_p_2_n * cobalt%dvm%p_nvmlgz_met(:,:,1,tau)) * cobalt%Rho_0, &
+              model_time, rmask = grid_tmask(:,:,1), is_in=isc, js_in=jsc, ie_in=iec, je_in=jec)
+          else
           used = g_send_data(cobalt%id_popos, (cobalt%p_pdi(:,:,1,tau) + cobalt%p_plg(:,:,1,tau) + &
             cobalt%p_pmd(:,:,1,tau) + cobalt%p_psm(:,:,1,tau) + bact(1)%q_p_2_n * cobalt%p_nbact(:,:,1,tau) + &
             cobalt%p_pdet(:,:,1,tau) + cobalt%p_pdet_fast(:,:,1,tau) + zoo(1)%q_p_2_n * cobalt%p_nsmz(:,:,1,tau) + &
 			      zoo(2)%q_p_2_n * cobalt%p_nmdz(:,:,1,tau) + zoo(3)%q_p_2_n * cobalt%p_nlgz(:,:,1,tau)) * cobalt%Rho_0, &
             model_time, rmask = grid_tmask(:,:,1), is_in=isc, js_in=jsc, ie_in=iec, je_in=jec)
+          endif
 
           used = g_send_data(cobalt%id_bfeos, (cobalt%p_fedi(:,:,1,tau) + cobalt%p_felg(:,:,1,tau) + &
             cobalt%p_femd(:,:,1,tau) + cobalt%p_fesm(:,:,1,tau) + cobalt%p_fedet(:,:,1,tau))*cobalt%Rho_0, &

@@ -3197,7 +3197,7 @@ contains
     real,dimension(1:NUM_PREY) :: prey_vec,prey_p2n_vec,prey_fe2n_vec,prey_si2n_vec
     real,dimension(1:NUM_ZOO)  :: tot_prey
     real :: a_theta, diff_theta2, diff_theta2_tol
-    real :: tot_prey_hp, sw_fac_denom, assim_eff, basal_respiration, swim
+    real :: tot_prey_hp, sw_fac_denom, assim_eff, basal_respiration
     real :: bact_uptake_ratio, vmax_bact, growth_ratio, food1, food2
     real :: fpoc_btm, log10_fpoc_btm
     real :: fe_salt
