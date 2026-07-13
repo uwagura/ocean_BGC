@@ -466,6 +466,43 @@ module cobalt_types
     integer ::  id_f_n_100          = -1  !< ID associated with diagnostics for bacterial nitrogen biomass in upper 100m
   end type bacteria
 
+  !> Cobalt-level state for diel vertical migration (DVM). This groups the
+  !> cobalt-level DVM tracer indices and source/sink flux arrays that used to
+  !> live directly on generic_COBALT_type. It is carried as an allocatable
+  !> component of generic_COBALT_type (allocated only when do_dvm is true), so
+  !> allocated(cobalt%dvm) is the single structural gate for cobalt-level DVM
+  !> state. Zoo-level DVM fields stay on the zooplankton type.
+  type dvm_type
+     ! Pointers to the 12 DVM prognostic tracer fields (i,j,k,tau) ! mpoupon
+     real, dimension(:,:,:,:), pointer :: &
+          p_nvmmdz,     &
+          p_nvmlgz,     &
+          p_nvmmdz_gut, &
+          p_nvmlgz_gut, &
+          p_pvmmdz_gut, &
+          p_pvmlgz_gut, &
+          p_fevmmdz_gut,&
+          p_fevmlgz_gut,&
+          p_sivmmdz_gut,&
+          p_sivmlgz_gut,&
+          p_nvmmdz_met, &
+          p_nvmlgz_met
+     ! Source/sink flux arrays for the 12 DVM tracers ! mpoupon
+     real, ALLOCATABLE, dimension(:,:,:) :: &
+          jnvmmdz,      &
+          jnvmlgz,      &
+          jnvmmdz_gut,  &
+          jnvmlgz_gut,  &
+          jpvmmdz_gut,  &
+          jpvmlgz_gut,  &
+          jfevmmdz_gut, &
+          jfevmlgz_gut, &
+          jsivmmdz_gut, &
+          jsivmlgz_gut, &
+          jnvmmdz_met,  &
+          jnvmlgz_met
+  end type dvm_type
+
   !> data type for other variables used in generic_cobalt module
   type generic_COBALT_type
 
@@ -713,18 +750,6 @@ module cobalt_types
           jnsmz,&
           jnmdz,&
           jnlgz,&
-          jnvmmdz,&      ! mpoupon
-          jnvmlgz,&      ! mpoupon
-          jnvmmdz_gut,&  ! mpoupon
-          jnvmlgz_gut,&  ! mpoupon
-          jpvmmdz_gut,&  ! mpoupon
-          jpvmlgz_gut,&  ! mpoupon
-          jfevmmdz_gut,& ! mpoupon
-          jfevmlgz_gut,& ! mpoupon
-          jsivmmdz_gut,& ! mpoupon
-          jsivmlgz_gut,& ! mpoupon
-          jnvmmdz_met,&  ! mpoupon
-          jnvmlgz_met,&  ! mpoupon
           jalk,&
           jalkh,&
           jalk_plus_btm,&
@@ -1063,19 +1088,7 @@ module cobalt_types
           p_sio4,&
           p_nsmz,&
           p_nmdz,&
-          p_nlgz,&
-          p_nvmmdz,&      ! mpoupon
-          p_nvmlgz,&      ! mpoupon
-          p_nvmmdz_gut,&  ! mpoupon
-          p_nvmlgz_gut,&  ! mpoupon
-          p_pvmmdz_gut,&  ! mpoupon
-          p_pvmlgz_gut,&  ! mpoupon
-          p_fevmmdz_gut,& ! mpoupon
-          p_fevmlgz_gut,& ! mpoupon
-          p_sivmmdz_gut,& ! mpoupon
-          p_sivmlgz_gut,& ! mpoupon
-          p_nvmmdz_met,&  ! mpoupon
-          p_nvmlgz_met    ! mpoupon
+          p_nlgz
 
       real, dimension (:,:), allocatable :: &
           runoff_flux_alk,&
@@ -1662,6 +1675,11 @@ module cobalt_types
           id_irr_aclm_sfc_dayint= -1, &
           id_irr_sfc_dms        = -1, &
           id_chl_dmsp           = -1
+
+     !> Cobalt-level diel vertical migration state (tracer indices + flux
+     !> arrays). Allocated only when do_dvm is true; allocated(cobalt%dvm) is
+     !> the structural gate. See type dvm_type above. ! mpoupon (refactor)
+     type(dvm_type), allocatable :: dvm
 
 
 !==============================================================================================================

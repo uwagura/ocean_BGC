@@ -18,6 +18,8 @@ module COBALT_eco
   public eco_cobalt_reg_diag
   public eco_cobalt_send_diag
   public dvm_add_params
+  public dvm_alloc_arrays
+  public dvm_dealloc_arrays
 
   contains
 
@@ -243,6 +245,107 @@ module COBALT_eco
                    default=1.0)
 
   end subroutine dvm_add_params
+
+  !> Allocate all Diel Vertical Migration (DVM) state and initialise it to zero:
+  !! the cobalt-level dvm component (12 source/sink flux arrays; the tracer
+  !! indices are scalars set later during tracer registration) and the zoo(4:5)
+  !! gut/metabolite/migration fields. Extracted verbatim from generic_COBALT
+  !! user_allocate_arrays (Stage 3); called only when do_dvm is true.
+  !! NOTE: the jnvmlgz_met allocation re-zeroes cobalt%dvm%jnvmlgz rather than
+  !! jnvmlgz_met; this reproduces an mpoupon quirk verbatim to preserve
+  !! bit-for-bit answers (jnvmlgz_met is fully written before it is read).
+  subroutine dvm_alloc_arrays(cobalt, zoo, isd, ied, jsd, jed, nk)
+    type(generic_COBALT_type),             intent(inout) :: cobalt
+    type(zooplankton), dimension(NUM_ZOO), intent(inout) :: zoo
+    integer,                               intent(in)    :: isd, ied, jsd, jed, nk
+
+    integer :: n
+
+    allocate(cobalt%dvm)
+    allocate(cobalt%dvm%jnvmmdz(isd:ied, jsd:jed, 1:nk))        ; cobalt%dvm%jnvmmdz=0.0
+    allocate(cobalt%dvm%jnvmlgz(isd:ied, jsd:jed, 1:nk))        ; cobalt%dvm%jnvmlgz=0.0
+    allocate(cobalt%dvm%jnvmmdz_gut(isd:ied, jsd:jed, 1:nk))        ; cobalt%dvm%jnvmmdz_gut=0.0
+    allocate(cobalt%dvm%jnvmlgz_gut(isd:ied, jsd:jed, 1:nk))        ; cobalt%dvm%jnvmlgz_gut=0.0
+    allocate(cobalt%dvm%jpvmmdz_gut(isd:ied, jsd:jed, 1:nk))        ; cobalt%dvm%jpvmmdz_gut=0.0
+    allocate(cobalt%dvm%jpvmlgz_gut(isd:ied, jsd:jed, 1:nk))        ; cobalt%dvm%jpvmlgz_gut=0.0
+    allocate(cobalt%dvm%jfevmmdz_gut(isd:ied, jsd:jed, 1:nk))       ; cobalt%dvm%jfevmmdz_gut=0.0
+    allocate(cobalt%dvm%jfevmlgz_gut(isd:ied, jsd:jed, 1:nk))       ; cobalt%dvm%jfevmlgz_gut=0.0
+    allocate(cobalt%dvm%jsivmmdz_gut(isd:ied, jsd:jed, 1:nk))       ; cobalt%dvm%jsivmmdz_gut=0.0
+    allocate(cobalt%dvm%jsivmlgz_gut(isd:ied, jsd:jed, 1:nk))       ; cobalt%dvm%jsivmlgz_gut=0.0
+    allocate(cobalt%dvm%jnvmmdz_met(isd:ied, jsd:jed, 1:nk))        ; cobalt%dvm%jnvmmdz_met=0.0
+    allocate(cobalt%dvm%jnvmlgz_met(isd:ied, jsd:jed, 1:nk))        ; cobalt%dvm%jnvmlgz=0.0
+    do n = NUM_BASE_ZOO+1, NUM_ZOO
+       allocate(zoo(n)%lim_nut_n_ingestion(isd:ied,jsd:jed,nk))   ; zoo(n)%lim_nut_n_ingestion   = 0.0
+       allocate(zoo(n)%jmetabo_n(isd:ied,jsd:jed,nk))      ; zoo(n)%jmetabo_n      = 0.0
+       allocate(zoo(n)%f_gut_n(isd:ied,jsd:jed,nk))        ; zoo(n)%f_gut_n        = 0.0
+       allocate(zoo(n)%f_gut_p(isd:ied,jsd:jed,nk))        ; zoo(n)%f_gut_p        = 0.0
+       allocate(zoo(n)%f_gut_fe(isd:ied,jsd:jed,nk))       ; zoo(n)%f_gut_fe       = 0.0
+       allocate(zoo(n)%f_gut_si(isd:ied,jsd:jed,nk))       ; zoo(n)%f_gut_si       = 0.0
+       allocate(zoo(n)%f_met_n(isd:ied,jsd:jed,nk))        ; zoo(n)%f_met_n        = 0.0
+       allocate(zoo(n)%jclear_gut_n(isd:ied,jsd:jed,nk))   ; zoo(n)%jclear_gut_n   = 0.0
+       allocate(zoo(n)%jprod_gut_n(isd:ied,jsd:jed,nk))    ; zoo(n)%jprod_gut_n    = 0.0
+       allocate(zoo(n)%jclear_gut_p(isd:ied,jsd:jed,nk))   ; zoo(n)%jclear_gut_p   = 0.0
+       allocate(zoo(n)%jprod_gut_p(isd:ied,jsd:jed,nk))    ; zoo(n)%jprod_gut_p    = 0.0
+       allocate(zoo(n)%jclear_gut_fe(isd:ied,jsd:jed,nk))  ; zoo(n)%jclear_gut_fe  = 0.0
+       allocate(zoo(n)%jprod_gut_fe(isd:ied,jsd:jed,nk))   ; zoo(n)%jprod_gut_fe   = 0.0
+       allocate(zoo(n)%jclear_gut_si(isd:ied,jsd:jed,nk))  ; zoo(n)%jclear_gut_si  = 0.0
+       allocate(zoo(n)%jprod_gut_si(isd:ied,jsd:jed,nk))   ; zoo(n)%jprod_gut_si   = 0.0
+       allocate(zoo(n)%jclear_met_n(isd:ied,jsd:jed,nk))   ; zoo(n)%jclear_met_n   = 0.0
+       allocate(zoo(n)%jprod_met_n(isd:ied,jsd:jed,nk))    ; zoo(n)%jprod_met_n    = 0.0
+       allocate(zoo(n)%vmove_met(isd:ied,jsd:jed,nk))      ; zoo(n)%vmove_met      = 0.0
+       allocate(zoo(n)%vmove_gut(isd:ied,jsd:jed,nk))      ; zoo(n)%vmove_gut      = 0.0
+       allocate(zoo(n)%vmove_gut_p(isd:ied,jsd:jed,nk))    ; zoo(n)%vmove_gut_p    = 0.0
+       allocate(zoo(n)%vmove_gut_fe(isd:ied,jsd:jed,nk))   ; zoo(n)%vmove_gut_fe   = 0.0
+       allocate(zoo(n)%vmove_gut_si(isd:ied,jsd:jed,nk))   ; zoo(n)%vmove_gut_si   = 0.0
+    enddo
+  end subroutine dvm_alloc_arrays
+
+  !> Deallocate all DVM state allocated by dvm_alloc_arrays. Mirror of that
+  !! routine; called only when do_dvm is true.
+  subroutine dvm_dealloc_arrays(cobalt, zoo)
+    type(generic_COBALT_type),             intent(inout) :: cobalt
+    type(zooplankton), dimension(NUM_ZOO), intent(inout) :: zoo
+
+    integer :: n
+
+    deallocate(cobalt%dvm%jnvmmdz)
+    deallocate(cobalt%dvm%jnvmlgz)
+    deallocate(cobalt%dvm%jnvmmdz_gut)
+    deallocate(cobalt%dvm%jnvmlgz_gut)
+    deallocate(cobalt%dvm%jpvmmdz_gut)
+    deallocate(cobalt%dvm%jpvmlgz_gut)
+    deallocate(cobalt%dvm%jfevmmdz_gut)
+    deallocate(cobalt%dvm%jfevmlgz_gut)
+    deallocate(cobalt%dvm%jsivmmdz_gut)
+    deallocate(cobalt%dvm%jsivmlgz_gut)
+    deallocate(cobalt%dvm%jnvmmdz_met)
+    deallocate(cobalt%dvm%jnvmlgz_met)
+    deallocate(cobalt%dvm)
+    do n = NUM_BASE_ZOO+1, NUM_ZOO
+       deallocate(zoo(n)%lim_nut_n_ingestion)
+       deallocate(zoo(n)%jmetabo_n)
+       deallocate(zoo(n)%f_gut_n)
+       deallocate(zoo(n)%f_gut_p)
+       deallocate(zoo(n)%f_gut_fe)
+       deallocate(zoo(n)%f_gut_si)
+       deallocate(zoo(n)%f_met_n)
+       deallocate(zoo(n)%jclear_gut_n)
+       deallocate(zoo(n)%jprod_gut_n)
+       deallocate(zoo(n)%jclear_gut_p)
+       deallocate(zoo(n)%jprod_gut_p)
+       deallocate(zoo(n)%jclear_gut_fe)
+       deallocate(zoo(n)%jprod_gut_fe)
+       deallocate(zoo(n)%jclear_gut_si)
+       deallocate(zoo(n)%jprod_gut_si)
+       deallocate(zoo(n)%jclear_met_n)
+       deallocate(zoo(n)%jprod_met_n)
+       deallocate(zoo(n)%vmove_met)
+       deallocate(zoo(n)%vmove_gut)
+       deallocate(zoo(n)%vmove_gut_p)
+       deallocate(zoo(n)%vmove_gut_fe)
+       deallocate(zoo(n)%vmove_gut_si)
+    enddo
+  end subroutine dvm_dealloc_arrays
 
   !> Register DVM-specific prognostic tracers for migrating zooplankton groups.
   !! These tracers are always registered (NUM_ZOO=5 is fixed) but their DVM-specific
@@ -679,10 +782,10 @@ module COBALT_eco
         allocate(rho_dzt_100(isc:iec, jsc:jec))
         do j = jsc, jec ; do i = isc, iec  !{
           rho_dzt_100(i,j) = rho_dzt(i,j,1)
-          zoo(4)%f_n_100(i,j) = (cobalt%p_nvmmdz(i,j,1,tau) + cobalt%p_nvmmdz_gut(i,j,1,tau) + &
-            cobalt%p_nvmmdz_met(i,j,1,tau)) * rho_dzt(i,j,1)
-          zoo(5)%f_n_100(i,j) = (cobalt%p_nvmlgz(i,j,1,tau) + cobalt%p_nvmlgz_gut(i,j,1,tau) + &
-            cobalt%p_nvmlgz_met(i,j,1,tau)) * rho_dzt(i,j,1)
+          zoo(4)%f_n_100(i,j) = (cobalt%dvm%p_nvmmdz(i,j,1,tau) + cobalt%dvm%p_nvmmdz_gut(i,j,1,tau) + &
+            cobalt%dvm%p_nvmmdz_met(i,j,1,tau)) * rho_dzt(i,j,1)
+          zoo(5)%f_n_100(i,j) = (cobalt%dvm%p_nvmlgz(i,j,1,tau) + cobalt%dvm%p_nvmlgz_gut(i,j,1,tau) + &
+            cobalt%dvm%p_nvmlgz_met(i,j,1,tau)) * rho_dzt(i,j,1)
         enddo; enddo !} i,j
 
         do j = jsc, jec ; do i = isc, iec  !{
@@ -692,22 +795,22 @@ module COBALT_eco
               k_100 = k
               rho_dzt_100(i,j) = rho_dzt_100(i,j) + rho_dzt(i,j,k)
               zoo(4)%f_n_100(i,j) = zoo(4)%f_n_100(i,j) + &
-                (cobalt%p_nvmmdz(i,j,k,tau) + cobalt%p_nvmmdz_gut(i,j,k,tau) + &
-                 cobalt%p_nvmmdz_met(i,j,k,tau)) * rho_dzt(i,j,k)
+                (cobalt%dvm%p_nvmmdz(i,j,k,tau) + cobalt%dvm%p_nvmmdz_gut(i,j,k,tau) + &
+                 cobalt%dvm%p_nvmmdz_met(i,j,k,tau)) * rho_dzt(i,j,k)
               zoo(5)%f_n_100(i,j) = zoo(5)%f_n_100(i,j) + &
-                (cobalt%p_nvmlgz(i,j,k,tau) + cobalt%p_nvmlgz_gut(i,j,k,tau) + &
-                 cobalt%p_nvmlgz_met(i,j,k,tau)) * rho_dzt(i,j,k)
+                (cobalt%dvm%p_nvmlgz(i,j,k,tau) + cobalt%dvm%p_nvmlgz_gut(i,j,k,tau) + &
+                 cobalt%dvm%p_nvmlgz_met(i,j,k,tau)) * rho_dzt(i,j,k)
             endif
           enddo  !} k
 
           if (k_100 .gt. 1 .and. k_100 .lt. grid_kmt(i,j)) then
             drho_dzt = cobalt%Rho_0 * 100.0 - rho_dzt_100(i,j)
             zoo(4)%f_n_100(i,j) = zoo(4)%f_n_100(i,j) + &
-              (cobalt%p_nvmmdz(i,j,k_100,tau) + cobalt%p_nvmmdz_gut(i,j,k_100,tau) + &
-               cobalt%p_nvmmdz_met(i,j,k_100,tau)) * drho_dzt
+              (cobalt%dvm%p_nvmmdz(i,j,k_100,tau) + cobalt%dvm%p_nvmmdz_gut(i,j,k_100,tau) + &
+               cobalt%dvm%p_nvmmdz_met(i,j,k_100,tau)) * drho_dzt
             zoo(5)%f_n_100(i,j) = zoo(5)%f_n_100(i,j) + &
-              (cobalt%p_nvmlgz(i,j,k_100,tau) + cobalt%p_nvmlgz_gut(i,j,k_100,tau) + &
-               cobalt%p_nvmlgz_met(i,j,k_100,tau)) * drho_dzt
+              (cobalt%dvm%p_nvmlgz(i,j,k_100,tau) + cobalt%dvm%p_nvmlgz_gut(i,j,k_100,tau) + &
+               cobalt%dvm%p_nvmlgz_met(i,j,k_100,tau)) * drho_dzt
           endif
         enddo; enddo !} i,j
         deallocate(rho_dzt_100)
