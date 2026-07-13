@@ -21,6 +21,8 @@ module COBALT_eco
   public dvm_alloc_arrays
   public dvm_dealloc_arrays
   public dvm_migration
+  public dvm_gut_production
+  public dvm_bioenergetics
 
   contains
 
@@ -527,6 +529,81 @@ module COBALT_eco
        enddo !} n
     enddo; enddo; enddo; !} i, j, k
   end subroutine dvm_migration
+
+  !> DVM group-4/5 detritus and dissolved-organic production from gut clearance.
+  !! Extracted verbatim from generic_COBALT update_from_source (Stage 5): the DVM
+  !! branch of the 3.3.1 detritus/DOM production dispatch. Called per grid point
+  !! inside the existing do m / if((m==4.or.m==5).and.do_dvm) guard. Temp(i,j,k)
+  !! is passed as the scalar temp_val.
+  subroutine dvm_gut_production(m, zoo, temp_val, i, j, k)
+    integer,                               intent(in)    :: m, i, j, k
+    type(zooplankton), dimension(NUM_ZOO), intent(inout) :: zoo
+    real,                                  intent(in)    :: temp_val
+
+           zoo(m)%jclear_gut_n(i,j,k)  = (zoo(m)%k_clear_gut + zoo(m)%k_temp_gut * temp_val) * zoo(m)%f_gut_n(i,j,k)
+           zoo(m)%jclear_gut_p(i,j,k)  = (zoo(m)%k_clear_gut + zoo(m)%k_temp_gut * temp_val) * zoo(m)%f_gut_p(i,j,k)
+           zoo(m)%jclear_gut_fe(i,j,k) = (zoo(m)%k_clear_gut + zoo(m)%k_temp_gut * temp_val) * zoo(m)%f_gut_fe(i,j,k)
+           zoo(m)%jclear_gut_si(i,j,k) = (zoo(m)%k_clear_gut + zoo(m)%k_temp_gut * temp_val) * zoo(m)%f_gut_si(i,j,k)
+           
+           zoo(m)%lim_nut_n_ingestion(i,j,k) = min(zoo(m)%jclear_gut_n(i,j,k), zoo(m)%jclear_gut_p(i,j,k)/zoo(m)%q_p_2_n)
+
+           zoo(m)%jprod_ndet(i,j,k)   = zoo(m)%phi_det   * zoo(m)%lim_nut_n_ingestion(i,j,k)
+           zoo(m)%jprod_pdet(i,j,k)   = zoo(m)%phi_det   * zoo(m)%lim_nut_n_ingestion(i,j,k)*zoo(m)%q_p_2_n
+           zoo(m)%jprod_sldon(i,j,k)  = zoo(m)%phi_sldon * zoo(m)%lim_nut_n_ingestion(i,j,k)
+           zoo(m)%jprod_ldon(i,j,k)   = zoo(m)%phi_ldon  * zoo(m)%lim_nut_n_ingestion(i,j,k)
+           zoo(m)%jprod_srdon(i,j,k)  = zoo(m)%phi_srdon * zoo(m)%lim_nut_n_ingestion(i,j,k)
+           zoo(m)%jprod_sldop(i,j,k)  = zoo(m)%phi_sldop * zoo(m)%lim_nut_n_ingestion(i,j,k)*zoo(m)%q_p_2_n
+           zoo(m)%jprod_ldop(i,j,k)   = zoo(m)%phi_ldop  * zoo(m)%lim_nut_n_ingestion(i,j,k)*zoo(m)%q_p_2_n
+           zoo(m)%jprod_srdop(i,j,k)  = zoo(m)%phi_srdop * zoo(m)%lim_nut_n_ingestion(i,j,k)*zoo(m)%q_p_2_n
+           
+           zoo(m)%jprod_fedet(i,j,k)  = zoo(m)%phi_det    * zoo(m)%jclear_gut_fe(i,j,k)
+           zoo(m)%jprod_sidet(i,j,k)  = zoo(m)%phi_det_si * zoo(m)%jclear_gut_si(i,j,k)
+  end subroutine dvm_gut_production
+
+  !> DVM group-4/5 bioenergetics: gut/metabolite production, basal respiration
+  !! augmented by swimming cost, and nutrient (nh4/po4/fed/sio4) excretion.
+  !! Extracted verbatim from generic_COBALT update_from_source (Stage 5): the DVM
+  !! branch of the 3.3 growth/respiration dispatch. assim_eff and basal_respiration
+  !! are computed in generic_COBALT (shared with the non-migrating branch) and
+  !! passed in. Also augments cobalt%jprod_ndet/pdet on negative production, as in
+  !! the original. Called per grid point inside the do m /
+  !! if((m==4.or.m==5).and.do_dvm) guard.
+  subroutine dvm_bioenergetics(m, zoo, cobalt, assim_eff, basal_respiration, i, j, k)
+    integer,                               intent(in)    :: m, i, j, k
+    type(zooplankton), dimension(NUM_ZOO), intent(inout) :: zoo
+    type(generic_COBALT_type),             intent(inout) :: cobalt
+    real,                                  intent(in)    :: assim_eff, basal_respiration
+
+             zoo(m)%jprod_gut_n(i,j,k)   = zoo(m)%jingest_n(i,j,k)
+             zoo(m)%jprod_gut_p(i,j,k)   = zoo(m)%jingest_p(i,j,k)
+             zoo(m)%jprod_gut_fe(i,j,k)  = zoo(m)%jingest_fe(i,j,k)
+             zoo(m)%jprod_gut_si(i,j,k)  = zoo(m)%jingest_sio2(i,j,k)
+
+             zoo(m)%jprod_met_n(i,j,k)   = assim_eff * zoo(m)%lim_nut_n_ingestion(i,j,k) 
+             zoo(m)%jclear_met_n(i,j,k)  = zoo(m)%f_met_n(i,j,k)   * zoo(m)%k_clear_met
+
+             zoo(m)%jmetabo_n(i,j,k) =  basal_respiration * (1 + abs(zoo(m)%vmove(i,j,k)) / zoo(m)%swim_ref)
+             
+             zoo(m)%jprod_n(i,j,k)   =  zoo(m)%jclear_met_n(i,j,k) - zoo(m)%jmetabo_n(i,j,k)
+             
+             zoo(m)%jprod_nh4(i,j,k)  =  zoo(m)%jclear_gut_n(i,j,k) - zoo(m)%lim_nut_n_ingestion(i,j,k) + zoo(m)%jmetabo_n(i,j,k) +  &
+                                         min(zoo(m)%jprod_n(i,j,k),0.0)
+             zoo(m)%jprod_po4(i,j,k) =  zoo(m)%jclear_gut_p(i,j,k) - zoo(m)%lim_nut_n_ingestion(i,j,k) * zoo(m)%q_p_2_n + &
+                                        zoo(m)%jmetabo_n(i,j,k) * zoo(m)%q_p_2_n  + min(zoo(m)%jprod_n(i,j,k)*zoo(m)%q_p_2_n,0.0)
+              
+             zoo(m)%jprod_fed(i,j,k)  = zoo(m)%jclear_gut_fe(i,j,k) - zoo(m)%jprod_fedet(i,j,k)
+             zoo(m)%jprod_sio4(i,j,k) = zoo(m)%jclear_gut_si(i,j,k) - zoo(m)%jprod_sidet(i,j,k)
+              
+             if (zoo(m)%jprod_n(i,j,k) .lt. 0.0) then
+                ! The negative production (i.e., mortality) is lost to large detritus. Update values
+                ! for zooplankton and for total.
+                zoo(m)%jprod_ndet(i,j,k) = zoo(m)%jprod_ndet(i,j,k) - zoo(m)%jprod_n(i,j,k)
+                zoo(m)%jprod_pdet(i,j,k) = zoo(m)%jprod_pdet(i,j,k) - zoo(m)%jprod_n(i,j,k)*zoo(m)%q_p_2_n
+                cobalt%jprod_ndet(i,j,k) = cobalt%jprod_ndet(i,j,k) - zoo(m)%jprod_n(i,j,k)
+                cobalt%jprod_pdet(i,j,k) = cobalt%jprod_pdet(i,j,k) - zoo(m)%jprod_n(i,j,k)*zoo(m)%q_p_2_n
+             endif
+  end subroutine dvm_bioenergetics
+
 
 
   !> Register DVM-specific prognostic tracers for migrating zooplankton groups.
