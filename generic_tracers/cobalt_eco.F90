@@ -20,6 +20,7 @@ module COBALT_eco
   public dvm_add_params
   public dvm_alloc_arrays
   public dvm_dealloc_arrays
+  public dvm_migration
 
   contains
 
@@ -346,6 +347,187 @@ module COBALT_eco
        deallocate(zoo(n)%vmove_gut_si)
     enddo
   end subroutine dvm_dealloc_arrays
+
+  !> Compute diel vertical migration (DVM) swimming velocities (vmove*) for the
+  !! migrating zooplankton groups. Extracted verbatim from generic_COBALT
+  !! update_from_source (Stage 4): the "smart migration" prep (prey-weighted
+  !! normalised cumulative biomass) followed by the vmove assignment loop. In
+  !! the original routine these two blocks were ~560 lines apart, but both
+  !! depend only on read-only state (f_n, rho_dzt), so co-locating them here is
+  !! arithmetically identical. The former update_from_source allocatable
+  !! temporaries are now automatic locals. Called only when do_dvm is true; the
+  !! subsequent g_tracer_set_values('vmove',...) calls stay in generic_COBALT.
+  subroutine dvm_migration(zoo, phyto, cobalt, rho_dzt, ilb, jlb, isc, iec, jsc, jec, nk)
+    type(zooplankton),   dimension(NUM_ZOO),   intent(inout) :: zoo
+    type(phytoplankton), dimension(NUM_PHYTO), intent(in)    :: phyto
+    type(generic_COBALT_type),                 intent(in)    :: cobalt
+    real, dimension(ilb:,jlb:,:),              intent(in)    :: rho_dzt
+    integer,                                   intent(in)    :: ilb, jlb, isc, iec, jsc, jec, nk
+
+    ! smart-migration temporaries (were allocatables in update_from_source)
+    real, dimension(isc:iec,jsc:jec,nk) :: vmmd_rho_dzt, vmlg_rho_dzt
+    real, dimension(isc:iec,jsc:jec,nk) :: vmmd_prey_rho_dzt, vmlg_prey_rho_dzt
+    real, dimension(isc:iec,jsc:jec,nk) :: vmmd_norm_cum, vmlg_norm_cum
+    real, dimension(isc:iec,jsc:jec,nk) :: vmmd_prey_norm_cum, vmlg_prey_norm_cum
+    real, dimension(isc:iec,jsc:jec)    :: vmmd_int, vmlg_int, vmmd_prey_int, vmlg_prey_int
+    integer :: i, j, k, n
+    real    :: swim
+
+    ! --- smart-migration prep: prey-weighted normalised cumulative biomass ---
+    do k = 1, nk ; do j = jsc, jec ; do i = isc, iec; !{
+        vmmd_rho_dzt(i,j,k) = rho_dzt(i,j,k) * zoo(4)%f_n(i,j,k)
+        vmlg_rho_dzt(i,j,k) = rho_dzt(i,j,k) * zoo(5)%f_n(i,j,k)
+        vmmd_prey_rho_dzt(i,j,k) =  rho_dzt(i,j,k) * ( phyto(DIAZO)%f_n(i,j,k) + \
+                                    phyto(LARGE)%f_n(i,j,k) + zoo(1)%f_n(i,j,k) )
+        vmlg_prey_rho_dzt(i,j,k) = rho_dzt(i,j,k) * ( phyto(DIAZO)%f_n(i,j,k) + \
+                                   phyto(LARGE)%f_n(i,j,k) + zoo(2)%f_n(i,j,k) + zoo(4)%f_n(i,j,k) )
+    enddo; enddo; enddo;  !}  i, j, k
+
+    do j = jsc, jec ; do i = isc, iec; !{
+        vmmd_int(i,j) = 0
+        vmlg_int(i,j) = 0
+        vmmd_prey_int(i,j) = 0
+        vmlg_prey_int(i,j) = 0
+    enddo; enddo;  !}  j, i
+
+    do k = 1, nk ; do j = jsc, jec ; do i = isc, iec; !{
+        vmmd_int(i,j)  =  vmmd_int(i,j)  +   vmmd_rho_dzt(i,j,k)
+        vmlg_int(i,j)  =  vmlg_int(i,j)  +   vmlg_rho_dzt(i,j,k) 
+        vmmd_prey_int(i,j)  =  vmmd_prey_int(i,j)  +   vmmd_prey_rho_dzt(i,j,k) 
+        vmlg_prey_int(i,j)  =  vmlg_prey_int(i,j)  +   vmlg_prey_rho_dzt(i,j,k)
+    enddo; enddo; enddo;  !}  i, j, k 
+
+    do j = jsc, jec ; do i = isc, iec; !{
+        vmmd_norm_cum(i,j,1)  = vmmd_rho_dzt(i,j,1)    /   vmmd_int(i,j)
+        vmlg_norm_cum(i,j,1)    = vmlg_rho_dzt(i,j,1)      /   vmlg_int(i,j)
+        vmmd_prey_norm_cum(i,j,1)  = vmmd_prey_rho_dzt(i,j,1)  /   vmmd_prey_int(i,j)
+        vmlg_prey_norm_cum(i,j,1)    = vmlg_prey_rho_dzt(i,j,1)    /   vmlg_prey_int(i,j)
+    enddo; enddo;  !}  j, i
+
+    do k = 2, nk ; do j = jsc, jec ; do i = isc, iec; !{
+        ! Normalization and cumulative sum
+        vmmd_norm_cum(i,j,k)  = vmmd_norm_cum(i,j,k-1) + vmmd_rho_dzt(i,j,k)    /   vmmd_int(i,j)
+        vmlg_norm_cum(i,j,k)    = vmlg_norm_cum(i,j,k-1) + vmlg_rho_dzt(i,j,k)      /   vmlg_int(i,j)
+        vmmd_prey_norm_cum(i,j,k)  =  vmmd_prey_norm_cum(i,j,k-1)  + vmmd_prey_rho_dzt(i,j,k)  /   vmmd_prey_int(i,j)
+        vmlg_prey_norm_cum(i,j,k)    = vmlg_prey_norm_cum(i,j,k-1) + vmlg_prey_rho_dzt(i,j,k)    /   vmlg_prey_int(i,j)
+    enddo; enddo; enddo;  !}  i, j, k
+
+    !
+    ! 3.2.4 Zooplankton migration: vmove assignment
+    !
+    do k = 1, nk ; do j = jsc, jec ; do i = isc, iec   !{
+       do n = 2, NUM_ZOO !{
+           
+           swim = zoo(n)%swim_max * abs( LOG(zoo(n)%dvm_I_thresh/(epsln+cobalt%irr_inst(i,j,k))) / 0.0232) / &
+                   (50.0 + abs( LOG(zoo(n)%dvm_I_thresh/(epsln+cobalt%irr_inst(i,j,k))) / 0.0232))
+           
+           ! Upward swimming (during night)
+           if ( cobalt%irr_inst(i,j,k) .lt. zoo(n)%dvm_I_thresh ) then
+              
+                ! Medium migratory zooplankton (4)
+                if ( n .eq. 4 .and. do_dvm ) then
+                   if (vmmd_prey_norm_cum(i,j,k) .gt.  vmmd_norm_cum(i,j,k)) then
+                     zoo(n)%vmove(i,j,k) = -swim ! Upward
+                     zoo(n)%vmove_met(i,j,k) = -swim ! Upward  
+                     zoo(n)%vmove_gut(i,j,k) = -swim ! Upward
+                     zoo(n)%vmove_gut_p(i,j,k)  = -swim ! Upward
+                     zoo(n)%vmove_gut_fe(i,j,k) = -swim ! Upward 
+                     zoo(n)%vmove_gut_si(i,j,k) = -swim ! Upward   
+                  else
+                     zoo(n)%vmove(i,j,k) = swim  ! Downward
+                     zoo(n)%vmove_met(i,j,k) = swim ! Downward  
+                     zoo(n)%vmove_gut(i,j,k) = swim ! Downward     
+                     zoo(n)%vmove_gut_p(i,j,k)  = swim ! Downward 
+                     zoo(n)%vmove_gut_fe(i,j,k) = swim ! Downward
+                     zoo(n)%vmove_gut_si(i,j,k) = swim ! Downward 
+                  endif
+             
+                ! Large migratory zooplankton (5)
+                else if ( n .eq. 5 .and. do_dvm ) then
+                   if (vmlg_prey_norm_cum(i,j,k) .gt.  vmlg_norm_cum(i,j,k)) then
+                     zoo(n)%vmove(i,j,k)        = -swim ! Upward
+                     zoo(n)%vmove_met(i,j,k)    = -swim ! Upward  
+                     zoo(n)%vmove_gut(i,j,k)    = -swim ! Upward
+                     zoo(n)%vmove_gut_p(i,j,k)  = -swim ! Upward
+                     zoo(n)%vmove_gut_fe(i,j,k) = -swim ! Upward
+                     zoo(n)%vmove_gut_si(i,j,k) = -swim ! Upward
+                  else
+                     zoo(n)%vmove(i,j,k)        = swim ! Downward
+                     zoo(n)%vmove_met(i,j,k)    = swim ! Downward
+                     zoo(n)%vmove_gut(i,j,k)    = swim ! Downward
+                     zoo(n)%vmove_gut_p(i,j,k)  = swim ! Downward
+                     zoo(n)%vmove_gut_fe(i,j,k) = swim ! Downward
+                     zoo(n)%vmove_gut_si(i,j,k) = swim ! Downward
+                  endif   
+             
+               ! Others (1,2,3)
+               else
+                  zoo(n)%vmove(i,j,k) = -swim ! Upward
+               endif
+
+           ! Downward swimming (during day)
+           else
+                
+                ! Medium migratory zooplankton (4)
+                if ( n .eq. 4 .and. do_dvm ) then
+                    ! Enough oxygen
+                    if (cobalt%f_o2(i,j,k) .gt. zoo(n)%swim_stop_o2) then
+                         zoo(n)%vmove(i,j,k) = swim        ! Downward
+                         zoo(n)%vmove_met(i,j,k) = swim    ! Downward
+                         zoo(n)%vmove_gut(i,j,k) = swim    ! Downward
+                         zoo(n)%vmove_gut_p(i,j,k)  = swim ! Downward
+                         zoo(n)%vmove_gut_fe(i,j,k) = swim ! Downward
+                         zoo(n)%vmove_gut_si(i,j,k) = swim ! Downward
+                    
+                    ! Not enough oxygen
+                    else
+                         zoo(n)%vmove(i,j,k) = 0.0        ! No swimming
+                         zoo(n)%vmove_met(i,j,k) = 0.0    ! No swimming
+                         zoo(n)%vmove_gut(i,j,k) = 0.0    ! No swimming
+                         zoo(n)%vmove_gut_p(i,j,k)  = 0.0 ! No swimming
+                         zoo(n)%vmove_gut_fe(i,j,k) = 0.0 ! No swimming
+                         zoo(n)%vmove_gut_si(i,j,k) = 0.0 ! No swimming
+                    endif
+                                 
+
+                ! Large migratory zooplankton (5)
+                else if ( n .eq. 5 .and. do_dvm ) then
+                   ! Enough oxygen
+                   if (cobalt%f_o2(i,j,k) .gt. zoo(n)%swim_stop_o2) then
+                        zoo(n)%vmove(i,j,k) = swim        ! Downward
+                        zoo(n)%vmove_met(i,j,k) = swim    ! Downward
+                        zoo(n)%vmove_gut(i,j,k) = swim    ! Downward
+                        zoo(n)%vmove_gut_p(i,j,k)  = swim ! Downward
+                        zoo(n)%vmove_gut_fe(i,j,k) = swim ! Downward
+                        zoo(n)%vmove_gut_si(i,j,k) = swim ! Downward
+               
+                   ! Not enough oxygen
+                   else
+                        zoo(n)%vmove(i,j,k) = 0.0        ! No swimming
+                        zoo(n)%vmove_met(i,j,k) = 0.0    ! No swimming
+                        zoo(n)%vmove_gut(i,j,k) = 0.0    ! No swimming
+                        zoo(n)%vmove_gut_p(i,j,k)  = 0.0 ! No swimming
+                        zoo(n)%vmove_gut_fe(i,j,k) = 0.0 ! No swimming
+                        zoo(n)%vmove_gut_si(i,j,k) = 0.0 ! No swimming
+                   endif
+
+               ! Others (1,2,3)
+               else
+                  ! Enough oxygen
+                  if (cobalt%f_o2(i,j,k) .gt. zoo(n)%swim_stop_o2) then 
+                       zoo(n)%vmove(i,j,k) = swim ! Downward
+              
+                  ! Not enough oxygen
+                  else
+                       zoo(n)%vmove(i,j,k) = 0.0 ! No swimming
+                  endif
+               endif 
+          endif
+ 
+       enddo !} n
+    enddo; enddo; enddo; !} i, j, k
+  end subroutine dvm_migration
+
 
   !> Register DVM-specific prognostic tracers for migrating zooplankton groups.
   !! These tracers are always registered (NUM_ZOO=5 is fixed) but their DVM-specific
