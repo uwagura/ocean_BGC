@@ -263,6 +263,66 @@ module cobalt_types
   end type phytoplankton
 
   !> zooplankton data type
+  !> DVM-specific scalar parameters for a zooplankton group. Held as a
+  !> NON-allocatable component of the zooplankton type (type(dvm_zoo_params)::dvm_p)
+  !> so the scalars always exist -- several are read in shared all-group loops in
+  !> update_from_source (ipa_vmmdz/vmlgz at the ipa_matrix setup; assim_eff_max/
+  !> min/kae in the assim_eff loop) where zoo(1..NUM_ZOO) are all touched. They
+  !> are populated by dvm_add_params only when do_dvm is true and are unused for
+  !> non-migrating groups. NOTE: k_clear_gut/k_temp_gut/k_clear_met/phi_aresp/
+  !> assim_eff_max/assim_eff_min/kae are currently declared-but-never-set in the
+  !> ; grouping them here does not change that.
+  type dvm_zoo_params
+    real k_clear_gut       !< gut clearance rate
+    real k_temp_gut        !< temperature dependence of gut clearance
+    real k_clear_met       !< metabolite clearance rate
+    real swim_max          !< maximum swimming speed for vertical migration, positive downwards (m sec-1)
+    real swim_ref          !< reference swimming speed for active-respiration scaling
+    real dvm_I_thresh      !< irradiance threshold for DVM swimming (watts m-2)
+    real k_I_dvm           !< irradiance scaling for DVM swimming (watts m-2)
+    real swim_stop_o2      !< oxygen concentration limit for swimming
+    real phi_aresp         !< fraction of ingested N to active (food-dependent) respiration
+    real assim_eff_max     !< zooplankton maximum assimilation efficiency
+    real assim_eff_min     !< zooplankton minimum assimilation efficiency
+    real kae               !< half-saturation constant for assimilation efficiency (moles N m-3)
+    real ipa_vmmdz         !< innate prey availability of medium migrating zooplankton
+    real ipa_vmlgz         !< innate prey availability of large migrating zooplankton
+  end type dvm_zoo_params
+
+  !> DVM-specific 3-D arrays (gut/metabolite state, gut/metabolite fluxes, and the
+  !> gut/metabolite migration velocities) for a zooplankton group. Carried as an
+  !> ALLOCATABLE component of the zooplankton type (type(dvm_zooplankton),
+  !> allocatable :: dvm), allocated by dvm_alloc_arrays only for the migrating
+  !> groups (NUM_BASE_ZOO+1..NUM_ZOO) and only when do_dvm is true. Thus
+  !> allocated(zoo(n)%dvm) is the per-group structural gate, and any code touching
+  !> these fields must stay restricted to the migrating groups. (The plain `vmove`
+  !> velocity stays flat on the zooplankton type because dvm_migration also writes
+  !> it for the base groups 2 and 3.)
+  type dvm_zooplankton
+    real, ALLOCATABLE, dimension(:,:,:) ::  f_gut_n       !< zooplankton n gut content
+    real, ALLOCATABLE, dimension(:,:,:) ::  f_gut_p       !< zooplankton p gut content
+    real, ALLOCATABLE, dimension(:,:,:) ::  f_gut_fe      !< zooplankton fe gut content
+    real, ALLOCATABLE, dimension(:,:,:) ::  f_gut_si      !< zooplankton si gut content
+    real, ALLOCATABLE, dimension(:,:,:) ::  f_met_n       !< zooplankton metabolites
+    real, ALLOCATABLE, dimension(:,:,:) ::  jclear_gut_n
+    real, ALLOCATABLE, dimension(:,:,:) ::  jprod_gut_n
+    real, ALLOCATABLE, dimension(:,:,:) ::  jclear_gut_p
+    real, ALLOCATABLE, dimension(:,:,:) ::  jprod_gut_p
+    real, ALLOCATABLE, dimension(:,:,:) ::  jclear_gut_fe
+    real, ALLOCATABLE, dimension(:,:,:) ::  jprod_gut_fe
+    real, ALLOCATABLE, dimension(:,:,:) ::  jclear_gut_si
+    real, ALLOCATABLE, dimension(:,:,:) ::  jprod_gut_si
+    real, ALLOCATABLE, dimension(:,:,:) ::  jclear_met_n
+    real, ALLOCATABLE, dimension(:,:,:) ::  jprod_met_n
+    real, ALLOCATABLE, dimension(:,:,:) ::  lim_nut_n_ingestion
+    real, ALLOCATABLE, dimension(:,:,:) ::  jmetabo_n
+    real, ALLOCATABLE, dimension(:,:,:) ::  vmove_gut
+    real, ALLOCATABLE, dimension(:,:,:) ::  vmove_gut_p
+    real, ALLOCATABLE, dimension(:,:,:) ::  vmove_gut_fe
+    real, ALLOCATABLE, dimension(:,:,:) ::  vmove_gut_si
+    real, ALLOCATABLE, dimension(:,:,:) ::  vmove_met
+  end type dvm_zooplankton
+
   type zooplankton
     real imax              !< maximum ingestion rate (sec-1)
     real ki                !< half-sat for ingestion (moles N m-3)
@@ -271,18 +331,7 @@ module cobalt_types
     real mswitch           !< switching parameter (dimensionless)
     real bresp             !< basal respiration rate (sec-1)
     real ktemp             !< temperature dependence of zooplankton rates (C-1)
-    real k_clear_gut       ! mpoupon
-    real k_temp_gut        ! mpoupon
-    real k_clear_met       ! mpoupon
-    real  swim_max         ! maximum swimming speed for vertical migration, positive downwards (m sec-1)
-    real swim_ref          ! mpoupon
-    real dvm_I_thresh      ! irradiance threshold for DVM swimming (watts m-2)
-    real k_I_dvm           ! irradiance scaling for DVM swimming (watts m-2)
-    real swim_stop_o2      ! oxygen concentration limit for swimming
-    real phi_aresp         ! fraction of ingested N to active (food-dependent) respiration
-    real assim_eff_max     ! zooplankton maximum assimilation efficiency
-    real assim_eff_min     ! zooplankton minimum assimilation efficiency
-    real kae               ! half-saturation constant for assimilation efficiency (moles N m-3)
+    type(dvm_zoo_params) :: dvm_p  !< DVM-specific scalar parameters (always present; see dvm_zoo_params)
     real phi_det           !< fraction of ingested N to detritus
     real phi_ldon          !< fraction of ingested N/P to labile don
     real phi_sldon         !< fraction of ingested N/P to semi-labile don
@@ -299,8 +348,6 @@ module cobalt_types
     real ipa_smz           !< innate prey availability of small zooplankton
     real ipa_mdz           !< innate prey availability of large zooplankton
     real ipa_lgz           !< innate prey availability of x-large zooplankton
-    real ipa_vmmdz         !< innate prey availability of large migrating zooplankton
-    real ipa_vmlgz         !< innate prey availability of x-large migrating zooplankton
     real ipa_det           !< innate prey availability of detritus
     real ipa_bact          !< innate prey availability for bacteria
     real, ALLOCATABLE, dimension(:,:)  ::   jprod_n_100     !< zooplankton nitrogen prod. integral in upper 100m
@@ -312,30 +359,12 @@ module cobalt_types
     real, ALLOCATABLE, dimension(:,:)  ::   jremin_n_100    !< zooplankton nitrogen remineralization integral in upper 100m
     real, ALLOCATABLE, dimension(:,:)  ::   f_n_100         !< zooplankton nitrogen biomass in upper 100m
     real, ALLOCATABLE, dimension(:,:,:) ::  f_n             !< zooplankton biomass
-    real, ALLOCATABLE, dimension(:,:,:) ::  f_gut_n         ! zooplankton n gut content ! mpoupon
-    real, ALLOCATABLE, dimension(:,:,:) ::  f_gut_p         ! zooplankton p gut content ! mpoupon
-    real, ALLOCATABLE, dimension(:,:,:) ::  f_gut_fe        ! zooplankton fe gut content ! mpoupon
-    real, ALLOCATABLE, dimension(:,:,:) ::  f_gut_si        ! zooplankton si gut content ! mpoupon
-    real, ALLOCATABLE, dimension(:,:,:) ::  f_met_n         ! zooplankton metabolites ! mpoupon
-    real, ALLOCATABLE, dimension(:,:,:) ::  assim_eff       ! zooplankton assimilation efficiency
-    real, ALLOCATABLE, dimension(:,:,:) ::  jclear_gut_n    ! mpoupon
-    real, ALLOCATABLE, dimension(:,:,:) ::  jprod_gut_n     ! mpoupon
-    real, ALLOCATABLE, dimension(:,:,:) ::  jclear_gut_p    ! mpoupon
-    real, ALLOCATABLE, dimension(:,:,:) ::  jprod_gut_p     ! mpoupon
-    real, ALLOCATABLE, dimension(:,:,:) ::  jclear_gut_fe   ! mpoupon
-    real, ALLOCATABLE, dimension(:,:,:) ::  jprod_gut_fe    ! mpoupon
-    real, ALLOCATABLE, dimension(:,:,:) ::  jclear_gut_si   ! mpoupon
-    real, ALLOCATABLE, dimension(:,:,:) ::  jprod_gut_si    ! mpoupon
-    real, ALLOCATABLE, dimension(:,:,:) ::  jclear_met_n    ! mpoupon
-    real, ALLOCATABLE, dimension(:,:,:) ::  jprod_met_n     ! mpoupon 
-    real, ALLOCATABLE, dimension(:,:,:) ::  lim_nut_n_ingestion  ! mpoupon
-    real, ALLOCATABLE, dimension(:,:,:) ::  jmetabo_n    ! mpoupon
+    real, ALLOCATABLE, dimension(:,:,:) ::  assim_eff       !< zooplankton assimilation efficiency (diag-only, DVM-era; write is do_dvm-guarded, pending removal)
     real, ALLOCATABLE, dimension(:,:,:) ::  jzloss_n     !< Losses of n due to consumption by other zooplankton groups
     real, ALLOCATABLE, dimension(:,:,:) ::  jzloss_p     !< Losses of p due to consumption by other zooplankton groups
     real, ALLOCATABLE, dimension(:,:,:) ::  jhploss_n    !< Losses of n due to consumption by unresolved higher preds
     real, ALLOCATABLE, dimension(:,:,:) ::  jhploss_p    !< Losses of p due to consumption by unresolved higher preds
     real, ALLOCATABLE, dimension(:,:,:) ::  jingest_n    !< Total ingestion of n
-    real, ALLOCATABLE, dimension(:,:,:) ::  jingest_n_lim !< Total ingestion of n
     real, ALLOCATABLE, dimension(:,:,:) ::  jingest_p    !< Total ingestion of p
     real, ALLOCATABLE, dimension(:,:,:) ::  jingest_sio2 !< Total ingestion of silicate
     real, ALLOCATABLE, dimension(:,:,:) ::  jingest_fe   !< Total ingestion of iron
@@ -356,12 +385,8 @@ module cobalt_types
     real, ALLOCATABLE, dimension(:,:,:) ::  jprod_n      !< zooplankton production
     real, ALLOCATABLE, dimension(:,:,:) ::  o2lim        !< oxygen limitation of zooplankton activity
     real, ALLOCATABLE, dimension(:,:,:) ::  temp_lim     !< Temperature limitation
-    real, ALLOCATABLE, dimension(:,:,:)  ::  vmove
-    real, ALLOCATABLE, dimension(:,:,:)  ::  vmove_gut
-    real, ALLOCATABLE, dimension(:,:,:)  ::  vmove_gut_p
-    real, ALLOCATABLE, dimension(:,:,:)  ::  vmove_gut_fe
-    real, ALLOCATABLE, dimension(:,:,:)  ::  vmove_gut_si
-    real, ALLOCATABLE, dimension(:,:,:)  ::  vmove_met
+    real, ALLOCATABLE, dimension(:,:,:)  ::  vmove  !< migration velocity (kept flat: dvm_migration writes it for base groups 2,3 too)
+    type(dvm_zooplankton), allocatable :: dvm  !< DVM-specific 3-D arrays (allocated for migrating groups only, when do_dvm; see dvm_zooplankton)
     integer ::  id_jzloss_n       = -1 !< ID associated with diagnostics for losses of n due to consumption by other zooplankton groups
     integer ::  id_jzloss_p       = -1 !< ID associated with diagnostics for losses of p due to consumption by other zooplankton groups
     integer ::  id_jhploss_n      = -1 !< ID associated with diagnostics for losses of n due to consumption by unresolved higher preds
@@ -473,7 +498,7 @@ module cobalt_types
   !> allocated(cobalt%dvm) is the single structural gate for cobalt-level DVM
   !> state. Zoo-level DVM fields stay on the zooplankton type.
   type dvm_type
-     ! Pointers to the 12 DVM prognostic tracer fields (i,j,k,tau) ! mpoupon
+     ! Pointers to the 12 DVM prognostic tracer fields (i,j,k,tau)
      real, dimension(:,:,:,:), pointer :: &
           p_nvmmdz,     &
           p_nvmlgz,     &
@@ -487,7 +512,7 @@ module cobalt_types
           p_sivmlgz_gut,&
           p_nvmmdz_met, &
           p_nvmlgz_met
-     ! Source/sink flux arrays for the 12 DVM tracers ! mpoupon
+     ! Source/sink flux arrays for the 12 DVM tracers
      real, ALLOCATABLE, dimension(:,:,:) :: &
           jnvmmdz,      &
           jnvmlgz,      &

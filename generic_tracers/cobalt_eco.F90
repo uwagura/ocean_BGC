@@ -54,66 +54,66 @@ module COBALT_eco
                    "exponential temperature dependence of medium migrating zooplankton rates", units="deg. C-1", default=0.063)
     call get_param(param_file, "generic_COBALT", "ktemp_vmlgz", zoo(5)%ktemp, &
                    "exponential temperature dependence of large migrating zooplankton rates", units="deg. C-1", default=0.063)
-    call get_param(param_file, "generic_COBALT", "dvm_I_thresh_smz", zoo(1)%dvm_I_thresh, "Irradiance threshold for small zooplankton DVM", &
+    call get_param(param_file, "generic_COBALT", "dvm_I_thresh_smz", zoo(1)%dvm_p%dvm_I_thresh, "Irradiance threshold for small zooplankton DVM", &
                    units="W m-2", default=0.0001)
-    call get_param(param_file, "generic_COBALT", "dvm_I_thresh_mdz", zoo(2)%dvm_I_thresh, "Irradiance threshold for medium zooplankton DVM", &
+    call get_param(param_file, "generic_COBALT", "dvm_I_thresh_mdz", zoo(2)%dvm_p%dvm_I_thresh, "Irradiance threshold for medium zooplankton DVM", &
                    units="W m-2", default=0.0001)
-    call get_param(param_file, "generic_COBALT", "dvm_I_thresh_lgz", zoo(3)%dvm_I_thresh, "Irradiance threshold for large zooplankton DVM", &
+    call get_param(param_file, "generic_COBALT", "dvm_I_thresh_lgz", zoo(3)%dvm_p%dvm_I_thresh, "Irradiance threshold for large zooplankton DVM", &
                    units="W m-2", default=0.0001)
-    call get_param(param_file, "generic_COBALT", "dvm_I_thresh_vmmdz", zoo(4)%dvm_I_thresh, "Irradiance threshold for medium migrating zooplankton DVM", &
+    call get_param(param_file, "generic_COBALT", "dvm_I_thresh_vmmdz", zoo(4)%dvm_p%dvm_I_thresh, "Irradiance threshold for medium migrating zooplankton DVM", &
                    units="W m-2", default=0.0001)
-    call get_param(param_file, "generic_COBALT", "dvm_I_thresh_vmlgz", zoo(5)%dvm_I_thresh, "Irradiance threshold for large migrating zooplankton DVM", &
+    call get_param(param_file, "generic_COBALT", "dvm_I_thresh_vmlgz", zoo(5)%dvm_p%dvm_I_thresh, "Irradiance threshold for large migrating zooplankton DVM", &
                    units="W m-2", default=0.0001)
-    call get_param(param_file, "generic_COBALT", "swim_max_smz", zoo(1)%swim_max, "Maximum swimming speed for small zooplankton", &
+    call get_param(param_file, "generic_COBALT", "swim_max_smz", zoo(1)%dvm_p%swim_max, "Maximum swimming speed for small zooplankton", &
                    units="m s-1", default=0.0)
-    call get_param(param_file, "generic_COBALT", "swim_max_mdz", zoo(2)%swim_max, "Maximum swimming speed for medium zooplankton", &
+    call get_param(param_file, "generic_COBALT", "swim_max_mdz", zoo(2)%dvm_p%swim_max, "Maximum swimming speed for medium zooplankton", &
                    units="m s-1", default=0.0)
-    call get_param(param_file, "generic_COBALT", "swim_max_lgz", zoo(3)%swim_max, "Maximum swimming speed for large zooplankton", &
+    call get_param(param_file, "generic_COBALT", "swim_max_lgz", zoo(3)%dvm_p%swim_max, "Maximum swimming speed for large zooplankton", &
                    units="m s-1", default=0.0)
-    call get_param(param_file, "generic_COBALT", "swim_max_vmmdz", zoo(4)%swim_max, "Maximum swimming speed for medium migrating zooplankton", &
+    call get_param(param_file, "generic_COBALT", "swim_max_vmmdz", zoo(4)%dvm_p%swim_max, "Maximum swimming speed for medium migrating zooplankton", &
                    units="m s-1", default=0.0) ! 0.06
-    call get_param(param_file, "generic_COBALT", "swim_max_vmlgz", zoo(5)%swim_max, "Maximum swimming speed for large migrating zooplankton", &
+    call get_param(param_file, "generic_COBALT", "swim_max_vmlgz", zoo(5)%dvm_p%swim_max, "Maximum swimming speed for large migrating zooplankton", &
                    units="m s-1", default=0.0) ! 0.08
-    call get_param(param_file, "generic_COBALT", "swim_ref_smz", zoo(1)%swim_ref, "Reference swimming speed for small zooplankton", &
+    call get_param(param_file, "generic_COBALT", "swim_ref_smz", zoo(1)%dvm_p%swim_ref, "Reference swimming speed for small zooplankton", &
                    units="m s-1", default=0.0)
-    call get_param(param_file, "generic_COBALT", "swim_ref_mdz", zoo(2)%swim_ref, "Reference swimming speed for medium zooplankton", &
+    call get_param(param_file, "generic_COBALT", "swim_ref_mdz", zoo(2)%dvm_p%swim_ref, "Reference swimming speed for medium zooplankton", &
                    units="m s-1", default=0.0)
-    call get_param(param_file, "generic_COBALT", "swim_ref_lgz", zoo(3)%swim_ref, "Reference swimming speed for large zooplankton", &
+    call get_param(param_file, "generic_COBALT", "swim_ref_lgz", zoo(3)%dvm_p%swim_ref, "Reference swimming speed for large zooplankton", &
                    units="m s-1", default=0.0)
-    call get_param(param_file, "generic_COBALT", "swim_ref_vmmdz", zoo(4)%swim_ref, "Reference swimming speed for medium migrating zooplankton", &
+    call get_param(param_file, "generic_COBALT", "swim_ref_vmmdz", zoo(4)%dvm_p%swim_ref, "Reference swimming speed for medium migrating zooplankton", &
                    units="m s-1", default=0.12)  ! 0.12
-    call get_param(param_file, "generic_COBALT", "swim_ref_vmlgz", zoo(5)%swim_ref, "Reference swimming speed for large migrating zooplankton", &
+    call get_param(param_file, "generic_COBALT", "swim_ref_vmlgz", zoo(5)%dvm_p%swim_ref, "Reference swimming speed for large migrating zooplankton", &
                    units="m s-1", default=0.16)  ! 0.16
-    call get_param(param_file, "generic_COBALT", "k_I_dvm_smz", zoo(1)%k_I_dvm, "Half-saturation irradiance for small zooplankton", &
+    call get_param(param_file, "generic_COBALT", "k_I_dvm_smz", zoo(1)%dvm_p%k_I_dvm, "Half-saturation irradiance for small zooplankton", &
                    units="W m-2", default=0.1)
-    call get_param(param_file, "generic_COBALT", "k_I_dvm_mdz", zoo(2)%k_I_dvm, "Half-saturation irradiance for medium zooplankton", &
+    call get_param(param_file, "generic_COBALT", "k_I_dvm_mdz", zoo(2)%dvm_p%k_I_dvm, "Half-saturation irradiance for medium zooplankton", &
                    units="W m-2", default=0.1)
-    call get_param(param_file, "generic_COBALT", "k_I_dvm_lgz", zoo(3)%k_I_dvm, "Half-saturation irradiance for large zooplankton", & 
+    call get_param(param_file, "generic_COBALT", "k_I_dvm_lgz", zoo(3)%dvm_p%k_I_dvm, "Half-saturation irradiance for large zooplankton", &
                    units="W m-2", default=0.1)
-    call get_param(param_file, "generic_COBALT", "k_I_dvm_vmmdz", zoo(4)%k_I_dvm, "Half-saturation irradiance for medium migrating zooplankton", &
+    call get_param(param_file, "generic_COBALT", "k_I_dvm_vmmdz", zoo(4)%dvm_p%k_I_dvm, "Half-saturation irradiance for medium migrating zooplankton", &
                    units="W m-2", default=0.1)
-    call get_param(param_file, "generic_COBALT", "k_I_dvm_vmlgz", zoo(5)%k_I_dvm, "Half-saturation irradiance for large migrating zooplankton", &
+    call get_param(param_file, "generic_COBALT", "k_I_dvm_vmlgz", zoo(5)%dvm_p%k_I_dvm, "Half-saturation irradiance for large migrating zooplankton", &
                    units="W m-2", default=0.1)
-    call get_param(param_file, "generic_COBALT", "swim_stop_o2_smz", zoo(1)%swim_stop_o2, "Oxygen level to stop swimming for small zooplankton", &
+    call get_param(param_file, "generic_COBALT", "swim_stop_o2_smz", zoo(1)%dvm_p%swim_stop_o2, "Oxygen level to stop swimming for small zooplankton", &
                    units="mol O2", default=60.0e-6)
-    call get_param(param_file, "generic_COBALT", "swim_stop_o2_mdz", zoo(2)%swim_stop_o2, "Oxygen level to stop swimming for medium zooplankton", &
+    call get_param(param_file, "generic_COBALT", "swim_stop_o2_mdz", zoo(2)%dvm_p%swim_stop_o2, "Oxygen level to stop swimming for medium zooplankton", &
                    units="mol O2", default=60.0e-6)
-    call get_param(param_file, "generic_COBALT", "swim_stop_o2_lgz", zoo(3)%swim_stop_o2, "Oxygen level to stop swimming for large zooplankton", & 
+    call get_param(param_file, "generic_COBALT", "swim_stop_o2_lgz", zoo(3)%dvm_p%swim_stop_o2, "Oxygen level to stop swimming for large zooplankton", &
                    units="mol O2", default=60.0e-6)
-    call get_param(param_file, "generic_COBALT", "swim_stop_o2_vmmdz", zoo(4)%swim_stop_o2, "Oxygen level to stop swimming for medium migrating zooplankton", &
+    call get_param(param_file, "generic_COBALT", "swim_stop_o2_vmmdz", zoo(4)%dvm_p%swim_stop_o2, "Oxygen level to stop swimming for medium migrating zooplankton", &
                    units="mol O2", default=60.0e-6)
-    call get_param(param_file, "generic_COBALT", "swim_stop_o2_vmlgz", zoo(5)%swim_stop_o2, "Oxygen level to stop swimming for large migrating zooplankton", &
+    call get_param(param_file, "generic_COBALT", "swim_stop_o2_vmlgz", zoo(5)%dvm_p%swim_stop_o2, "Oxygen level to stop swimming for large migrating zooplankton", &
                    units="mol O2", default=60.0e-6)
-    call get_param(param_file, "generic_COBALT", "smz_ipa_vmmdz", zoo(1)%ipa_vmmdz, &
+    call get_param(param_file, "generic_COBALT", "smz_ipa_vmmdz", zoo(1)%dvm_p%ipa_vmmdz, &
                    "innate availability of medium migrating zooplankton to small zooplankton feeding (0-1)", units="none", &
                    default=0.0)
-    call get_param(param_file, "generic_COBALT", "smz_ipa_vmlgz", zoo(1)%ipa_vmlgz, &
+    call get_param(param_file, "generic_COBALT", "smz_ipa_vmlgz", zoo(1)%dvm_p%ipa_vmlgz, &
                    "innate availability of large migrating zooplankton to small zooplankton feeding (0-1)", units="none", &
                    default=0.0)
-    call get_param(param_file, "generic_COBALT", "mdz_ipa_vmmdz", zoo(2)%ipa_vmmdz, &
+    call get_param(param_file, "generic_COBALT", "mdz_ipa_vmmdz", zoo(2)%dvm_p%ipa_vmmdz, &
                    "innate availability of medium migrating zooplankton to medium zooplankton feeding (0-1)", units="none", &
                    default=0.0)
-    call get_param(param_file, "generic_COBALT", "mdz_ipa_vmlgz", zoo(2)%ipa_vmlgz, &
+    call get_param(param_file, "generic_COBALT", "mdz_ipa_vmlgz", zoo(2)%dvm_p%ipa_vmlgz, &
                    "innate availability of large migrating zooplankton to medium zooplankton feeding (0-1)", units="none", &
                    default=0.0)
     !
@@ -140,20 +140,20 @@ module COBALT_eco
     call get_param(param_file, "generic_COBALT", "vmmdz_ipa_lgz", zoo(4)%ipa_lgz, &
                    "innate availability of large zooplankton to medium migrating zooplankton feeding (0-1)", units="none", &
                    default=0.0)
-    call get_param(param_file, "generic_COBALT", "vmmdz_ipa_vmmdz", zoo(4)%ipa_vmmdz, &
+    call get_param(param_file, "generic_COBALT", "vmmdz_ipa_vmmdz", zoo(4)%dvm_p%ipa_vmmdz, &
                    "innate availability of medium migrating zooplankton to medium migrating zooplankton feeding (0-1)", units="none", &
                    default=0.0)
-    call get_param(param_file, "generic_COBALT", "vmmdz_ipa_vmlgz", zoo(4)%ipa_vmlgz, &
+    call get_param(param_file, "generic_COBALT", "vmmdz_ipa_vmlgz", zoo(4)%dvm_p%ipa_vmlgz, &
                    "innate availability of large migrating zooplankton to medium migrating zooplankton feeding (0-1)", units="none", &
                    default=0.0)
     call get_param(param_file, "generic_COBALT", "vmmdz_ipa_bact", zoo(4)%ipa_bact, &
                    "innate availability of bacteria to medium migrating zooplankton feeding (0-1)", units="none", default=0.0)
     call get_param(param_file, "generic_COBALT", "vmmdz_ipa_det", zoo(4)%ipa_det, &
                    "innate availability of detritus to medium migrating zooplankton feeding (0-1)", units="none", default=0.0)
-       call get_param(param_file, "generic_COBALT", "lgz_ipa_vmmdz", zoo(3)%ipa_vmmdz, &
+       call get_param(param_file, "generic_COBALT", "lgz_ipa_vmmdz", zoo(3)%dvm_p%ipa_vmmdz, &
                    "innate availability of medium migrating zooplankton to large zooplankton feeding (0-1)", units="none", &
                    default=1.0)
-    call get_param(param_file, "generic_COBALT", "lgz_ipa_vmlgz", zoo(3)%ipa_vmlgz, &
+    call get_param(param_file, "generic_COBALT", "lgz_ipa_vmlgz", zoo(3)%dvm_p%ipa_vmlgz, &
                    "innate availability of large migrating zooplankton to large zooplankton feeding (0-1)", units="none", &
                default=0.0)
 
@@ -181,10 +181,10 @@ module COBALT_eco
     call get_param(param_file, "generic_COBALT", "vmlgz_ipa_lgz", zoo(5)%ipa_lgz, &
                    "innate availability of large zooplankton to large migrating zooplankton feeding (0-1)", units="none", &
                    default=0.0)
-    call get_param(param_file, "generic_COBALT", "vmlgz_ipa_vmmdz", zoo(5)%ipa_vmmdz, &
+    call get_param(param_file, "generic_COBALT", "vmlgz_ipa_vmmdz", zoo(5)%dvm_p%ipa_vmmdz, &
                    "innate availability of medium migrating zooplankton to large migrating zooplankton feeding (0-1)", units="none", &
                    default=1.0)
-    call get_param(param_file, "generic_COBALT", "vmlgz_ipa_vmlgz", zoo(5)%ipa_vmlgz, &
+    call get_param(param_file, "generic_COBALT", "vmlgz_ipa_vmlgz", zoo(5)%dvm_p%ipa_vmlgz, &
                    "innate availability of large migrating zooplankton to large migrating zooplankton feeding (0-1)", units="none", &
                    default=0.0)
     call get_param(param_file, "generic_COBALT", "vmlgz_ipa_bact",zoo(5)%ipa_bact, &
@@ -290,28 +290,29 @@ module COBALT_eco
     allocate(cobalt%dvm%jnvmmdz_met(isd:ied, jsd:jed, 1:nk))        ; cobalt%dvm%jnvmmdz_met=0.0
     allocate(cobalt%dvm%jnvmlgz_met(isd:ied, jsd:jed, 1:nk))        ; cobalt%dvm%jnvmlgz=0.0
     do n = NUM_BASE_ZOO+1, NUM_ZOO
-       allocate(zoo(n)%lim_nut_n_ingestion(isd:ied,jsd:jed,nk))   ; zoo(n)%lim_nut_n_ingestion   = 0.0
-       allocate(zoo(n)%jmetabo_n(isd:ied,jsd:jed,nk))             ; zoo(n)%jmetabo_n      = 0.0
-       allocate(zoo(n)%f_gut_n(isd:ied,jsd:jed,nk))               ; zoo(n)%f_gut_n        = 0.0
-       allocate(zoo(n)%f_gut_p(isd:ied,jsd:jed,nk))               ; zoo(n)%f_gut_p        = 0.0
-       allocate(zoo(n)%f_gut_fe(isd:ied,jsd:jed,nk))              ; zoo(n)%f_gut_fe       = 0.0
-       allocate(zoo(n)%f_gut_si(isd:ied,jsd:jed,nk))              ; zoo(n)%f_gut_si       = 0.0
-       allocate(zoo(n)%f_met_n(isd:ied,jsd:jed,nk))               ; zoo(n)%f_met_n        = 0.0
-       allocate(zoo(n)%jclear_gut_n(isd:ied,jsd:jed,nk))          ; zoo(n)%jclear_gut_n   = 0.0
-       allocate(zoo(n)%jprod_gut_n(isd:ied,jsd:jed,nk))           ; zoo(n)%jprod_gut_n    = 0.0
-       allocate(zoo(n)%jclear_gut_p(isd:ied,jsd:jed,nk))          ; zoo(n)%jclear_gut_p   = 0.0
-       allocate(zoo(n)%jprod_gut_p(isd:ied,jsd:jed,nk))           ; zoo(n)%jprod_gut_p    = 0.0
-       allocate(zoo(n)%jclear_gut_fe(isd:ied,jsd:jed,nk))         ; zoo(n)%jclear_gut_fe  = 0.0
-       allocate(zoo(n)%jprod_gut_fe(isd:ied,jsd:jed,nk))          ; zoo(n)%jprod_gut_fe   = 0.0
-       allocate(zoo(n)%jclear_gut_si(isd:ied,jsd:jed,nk))         ; zoo(n)%jclear_gut_si  = 0.0
-       allocate(zoo(n)%jprod_gut_si(isd:ied,jsd:jed,nk))          ; zoo(n)%jprod_gut_si   = 0.0
-       allocate(zoo(n)%jclear_met_n(isd:ied,jsd:jed,nk))          ; zoo(n)%jclear_met_n   = 0.0
-       allocate(zoo(n)%jprod_met_n(isd:ied,jsd:jed,nk))           ; zoo(n)%jprod_met_n    = 0.0
-       allocate(zoo(n)%vmove_met(isd:ied,jsd:jed,nk))             ; zoo(n)%vmove_met      = 0.0
-       allocate(zoo(n)%vmove_gut(isd:ied,jsd:jed,nk))             ; zoo(n)%vmove_gut      = 0.0
-       allocate(zoo(n)%vmove_gut_p(isd:ied,jsd:jed,nk))           ; zoo(n)%vmove_gut_p    = 0.0
-       allocate(zoo(n)%vmove_gut_fe(isd:ied,jsd:jed,nk))          ; zoo(n)%vmove_gut_fe   = 0.0
-       allocate(zoo(n)%vmove_gut_si(isd:ied,jsd:jed,nk))          ; zoo(n)%vmove_gut_si   = 0.0
+       allocate(zoo(n)%dvm)
+       allocate(zoo(n)%dvm%lim_nut_n_ingestion(isd:ied,jsd:jed,nk))   ; zoo(n)%dvm%lim_nut_n_ingestion   = 0.0
+       allocate(zoo(n)%dvm%jmetabo_n(isd:ied,jsd:jed,nk))             ; zoo(n)%dvm%jmetabo_n      = 0.0
+       allocate(zoo(n)%dvm%f_gut_n(isd:ied,jsd:jed,nk))               ; zoo(n)%dvm%f_gut_n        = 0.0
+       allocate(zoo(n)%dvm%f_gut_p(isd:ied,jsd:jed,nk))               ; zoo(n)%dvm%f_gut_p        = 0.0
+       allocate(zoo(n)%dvm%f_gut_fe(isd:ied,jsd:jed,nk))              ; zoo(n)%dvm%f_gut_fe       = 0.0
+       allocate(zoo(n)%dvm%f_gut_si(isd:ied,jsd:jed,nk))              ; zoo(n)%dvm%f_gut_si       = 0.0
+       allocate(zoo(n)%dvm%f_met_n(isd:ied,jsd:jed,nk))               ; zoo(n)%dvm%f_met_n        = 0.0
+       allocate(zoo(n)%dvm%jclear_gut_n(isd:ied,jsd:jed,nk))          ; zoo(n)%dvm%jclear_gut_n   = 0.0
+       allocate(zoo(n)%dvm%jprod_gut_n(isd:ied,jsd:jed,nk))           ; zoo(n)%dvm%jprod_gut_n    = 0.0
+       allocate(zoo(n)%dvm%jclear_gut_p(isd:ied,jsd:jed,nk))          ; zoo(n)%dvm%jclear_gut_p   = 0.0
+       allocate(zoo(n)%dvm%jprod_gut_p(isd:ied,jsd:jed,nk))           ; zoo(n)%dvm%jprod_gut_p    = 0.0
+       allocate(zoo(n)%dvm%jclear_gut_fe(isd:ied,jsd:jed,nk))         ; zoo(n)%dvm%jclear_gut_fe  = 0.0
+       allocate(zoo(n)%dvm%jprod_gut_fe(isd:ied,jsd:jed,nk))          ; zoo(n)%dvm%jprod_gut_fe   = 0.0
+       allocate(zoo(n)%dvm%jclear_gut_si(isd:ied,jsd:jed,nk))         ; zoo(n)%dvm%jclear_gut_si  = 0.0
+       allocate(zoo(n)%dvm%jprod_gut_si(isd:ied,jsd:jed,nk))          ; zoo(n)%dvm%jprod_gut_si   = 0.0
+       allocate(zoo(n)%dvm%jclear_met_n(isd:ied,jsd:jed,nk))          ; zoo(n)%dvm%jclear_met_n   = 0.0
+       allocate(zoo(n)%dvm%jprod_met_n(isd:ied,jsd:jed,nk))           ; zoo(n)%dvm%jprod_met_n    = 0.0
+       allocate(zoo(n)%dvm%vmove_met(isd:ied,jsd:jed,nk))             ; zoo(n)%dvm%vmove_met      = 0.0
+       allocate(zoo(n)%dvm%vmove_gut(isd:ied,jsd:jed,nk))             ; zoo(n)%dvm%vmove_gut      = 0.0
+       allocate(zoo(n)%dvm%vmove_gut_p(isd:ied,jsd:jed,nk))           ; zoo(n)%dvm%vmove_gut_p    = 0.0
+       allocate(zoo(n)%dvm%vmove_gut_fe(isd:ied,jsd:jed,nk))          ; zoo(n)%dvm%vmove_gut_fe   = 0.0
+       allocate(zoo(n)%dvm%vmove_gut_si(isd:ied,jsd:jed,nk))          ; zoo(n)%dvm%vmove_gut_si   = 0.0
     enddo
   end subroutine dvm_alloc_arrays
 
@@ -337,28 +338,29 @@ module COBALT_eco
     deallocate(cobalt%dvm%jnvmlgz_met)
     deallocate(cobalt%dvm)
     do n = NUM_BASE_ZOO+1, NUM_ZOO
-       deallocate(zoo(n)%lim_nut_n_ingestion)
-       deallocate(zoo(n)%jmetabo_n)
-       deallocate(zoo(n)%f_gut_n)
-       deallocate(zoo(n)%f_gut_p)
-       deallocate(zoo(n)%f_gut_fe)
-       deallocate(zoo(n)%f_gut_si)
-       deallocate(zoo(n)%f_met_n)
-       deallocate(zoo(n)%jclear_gut_n)
-       deallocate(zoo(n)%jprod_gut_n)
-       deallocate(zoo(n)%jclear_gut_p)
-       deallocate(zoo(n)%jprod_gut_p)
-       deallocate(zoo(n)%jclear_gut_fe)
-       deallocate(zoo(n)%jprod_gut_fe)
-       deallocate(zoo(n)%jclear_gut_si)
-       deallocate(zoo(n)%jprod_gut_si)
-       deallocate(zoo(n)%jclear_met_n)
-       deallocate(zoo(n)%jprod_met_n)
-       deallocate(zoo(n)%vmove_met)
-       deallocate(zoo(n)%vmove_gut)
-       deallocate(zoo(n)%vmove_gut_p)
-       deallocate(zoo(n)%vmove_gut_fe)
-       deallocate(zoo(n)%vmove_gut_si)
+       deallocate(zoo(n)%dvm%lim_nut_n_ingestion)
+       deallocate(zoo(n)%dvm%jmetabo_n)
+       deallocate(zoo(n)%dvm%f_gut_n)
+       deallocate(zoo(n)%dvm%f_gut_p)
+       deallocate(zoo(n)%dvm%f_gut_fe)
+       deallocate(zoo(n)%dvm%f_gut_si)
+       deallocate(zoo(n)%dvm%f_met_n)
+       deallocate(zoo(n)%dvm%jclear_gut_n)
+       deallocate(zoo(n)%dvm%jprod_gut_n)
+       deallocate(zoo(n)%dvm%jclear_gut_p)
+       deallocate(zoo(n)%dvm%jprod_gut_p)
+       deallocate(zoo(n)%dvm%jclear_gut_fe)
+       deallocate(zoo(n)%dvm%jprod_gut_fe)
+       deallocate(zoo(n)%dvm%jclear_gut_si)
+       deallocate(zoo(n)%dvm%jprod_gut_si)
+       deallocate(zoo(n)%dvm%jclear_met_n)
+       deallocate(zoo(n)%dvm%jprod_met_n)
+       deallocate(zoo(n)%dvm%vmove_met)
+       deallocate(zoo(n)%dvm%vmove_gut)
+       deallocate(zoo(n)%dvm%vmove_gut_p)
+       deallocate(zoo(n)%dvm%vmove_gut_fe)
+       deallocate(zoo(n)%dvm%vmove_gut_si)
+       deallocate(zoo(n)%dvm)
     enddo
   end subroutine dvm_dealloc_arrays
 
@@ -432,46 +434,46 @@ module COBALT_eco
     do k = 1, nk ; do j = jsc, jec ; do i = isc, iec   !{
        do n = 2, NUM_ZOO !{
            
-           swim = zoo(n)%swim_max * abs( LOG(zoo(n)%dvm_I_thresh/(epsln+cobalt%irr_inst(i,j,k))) / 0.0232) / &
-                   (50.0 + abs( LOG(zoo(n)%dvm_I_thresh/(epsln+cobalt%irr_inst(i,j,k))) / 0.0232))
+           swim = zoo(n)%dvm_p%swim_max * abs( LOG(zoo(n)%dvm_p%dvm_I_thresh/(epsln+cobalt%irr_inst(i,j,k))) / 0.0232) / &
+                   (50.0 + abs( LOG(zoo(n)%dvm_p%dvm_I_thresh/(epsln+cobalt%irr_inst(i,j,k))) / 0.0232))
            
            ! Upward swimming (during night)
-           if ( cobalt%irr_inst(i,j,k) .lt. zoo(n)%dvm_I_thresh ) then
+           if ( cobalt%irr_inst(i,j,k) .lt. zoo(n)%dvm_p%dvm_I_thresh ) then
               
                 ! Medium migratory zooplankton (4)
                 if ( n .eq. 4 .and. do_dvm ) then
                    if (vmmd_prey_norm_cum(i,j,k) .gt.  vmmd_norm_cum(i,j,k)) then
                      zoo(n)%vmove(i,j,k) = -swim ! Upward
-                     zoo(n)%vmove_met(i,j,k) = -swim ! Upward  
-                     zoo(n)%vmove_gut(i,j,k) = -swim ! Upward
-                     zoo(n)%vmove_gut_p(i,j,k)  = -swim ! Upward
-                     zoo(n)%vmove_gut_fe(i,j,k) = -swim ! Upward 
-                     zoo(n)%vmove_gut_si(i,j,k) = -swim ! Upward   
+                     zoo(n)%dvm%vmove_met(i,j,k) = -swim ! Upward
+                     zoo(n)%dvm%vmove_gut(i,j,k) = -swim ! Upward
+                     zoo(n)%dvm%vmove_gut_p(i,j,k)  = -swim ! Upward
+                     zoo(n)%dvm%vmove_gut_fe(i,j,k) = -swim ! Upward
+                     zoo(n)%dvm%vmove_gut_si(i,j,k) = -swim ! Upward
                   else
                      zoo(n)%vmove(i,j,k) = swim  ! Downward
-                     zoo(n)%vmove_met(i,j,k) = swim ! Downward  
-                     zoo(n)%vmove_gut(i,j,k) = swim ! Downward     
-                     zoo(n)%vmove_gut_p(i,j,k)  = swim ! Downward 
-                     zoo(n)%vmove_gut_fe(i,j,k) = swim ! Downward
-                     zoo(n)%vmove_gut_si(i,j,k) = swim ! Downward 
+                     zoo(n)%dvm%vmove_met(i,j,k) = swim ! Downward
+                     zoo(n)%dvm%vmove_gut(i,j,k) = swim ! Downward
+                     zoo(n)%dvm%vmove_gut_p(i,j,k)  = swim ! Downward
+                     zoo(n)%dvm%vmove_gut_fe(i,j,k) = swim ! Downward
+                     zoo(n)%dvm%vmove_gut_si(i,j,k) = swim ! Downward
                   endif
              
                 ! Large migratory zooplankton (5)
                 else if ( n .eq. 5 .and. do_dvm ) then
                    if (vmlg_prey_norm_cum(i,j,k) .gt.  vmlg_norm_cum(i,j,k)) then
                      zoo(n)%vmove(i,j,k)        = -swim ! Upward
-                     zoo(n)%vmove_met(i,j,k)    = -swim ! Upward  
-                     zoo(n)%vmove_gut(i,j,k)    = -swim ! Upward
-                     zoo(n)%vmove_gut_p(i,j,k)  = -swim ! Upward
-                     zoo(n)%vmove_gut_fe(i,j,k) = -swim ! Upward
-                     zoo(n)%vmove_gut_si(i,j,k) = -swim ! Upward
+                     zoo(n)%dvm%vmove_met(i,j,k)    = -swim ! Upward
+                     zoo(n)%dvm%vmove_gut(i,j,k)    = -swim ! Upward
+                     zoo(n)%dvm%vmove_gut_p(i,j,k)  = -swim ! Upward
+                     zoo(n)%dvm%vmove_gut_fe(i,j,k) = -swim ! Upward
+                     zoo(n)%dvm%vmove_gut_si(i,j,k) = -swim ! Upward
                   else
                      zoo(n)%vmove(i,j,k)        = swim ! Downward
-                     zoo(n)%vmove_met(i,j,k)    = swim ! Downward
-                     zoo(n)%vmove_gut(i,j,k)    = swim ! Downward
-                     zoo(n)%vmove_gut_p(i,j,k)  = swim ! Downward
-                     zoo(n)%vmove_gut_fe(i,j,k) = swim ! Downward
-                     zoo(n)%vmove_gut_si(i,j,k) = swim ! Downward
+                     zoo(n)%dvm%vmove_met(i,j,k)    = swim ! Downward
+                     zoo(n)%dvm%vmove_gut(i,j,k)    = swim ! Downward
+                     zoo(n)%dvm%vmove_gut_p(i,j,k)  = swim ! Downward
+                     zoo(n)%dvm%vmove_gut_fe(i,j,k) = swim ! Downward
+                     zoo(n)%dvm%vmove_gut_si(i,j,k) = swim ! Downward
                   endif   
              
                ! Others (1,2,3)
@@ -485,50 +487,50 @@ module COBALT_eco
                 ! Medium migratory zooplankton (4)
                 if ( n .eq. 4 .and. do_dvm ) then
                     ! Enough oxygen
-                    if (cobalt%f_o2(i,j,k) .gt. zoo(n)%swim_stop_o2) then
+                    if (cobalt%f_o2(i,j,k) .gt. zoo(n)%dvm_p%swim_stop_o2) then
                          zoo(n)%vmove(i,j,k) = swim        ! Downward
-                         zoo(n)%vmove_met(i,j,k) = swim    ! Downward
-                         zoo(n)%vmove_gut(i,j,k) = swim    ! Downward
-                         zoo(n)%vmove_gut_p(i,j,k)  = swim ! Downward
-                         zoo(n)%vmove_gut_fe(i,j,k) = swim ! Downward
-                         zoo(n)%vmove_gut_si(i,j,k) = swim ! Downward
+                         zoo(n)%dvm%vmove_met(i,j,k) = swim    ! Downward
+                         zoo(n)%dvm%vmove_gut(i,j,k) = swim    ! Downward
+                         zoo(n)%dvm%vmove_gut_p(i,j,k)  = swim ! Downward
+                         zoo(n)%dvm%vmove_gut_fe(i,j,k) = swim ! Downward
+                         zoo(n)%dvm%vmove_gut_si(i,j,k) = swim ! Downward
                     
                     ! Not enough oxygen
                     else
                          zoo(n)%vmove(i,j,k) = 0.0        ! No swimming
-                         zoo(n)%vmove_met(i,j,k) = 0.0    ! No swimming
-                         zoo(n)%vmove_gut(i,j,k) = 0.0    ! No swimming
-                         zoo(n)%vmove_gut_p(i,j,k)  = 0.0 ! No swimming
-                         zoo(n)%vmove_gut_fe(i,j,k) = 0.0 ! No swimming
-                         zoo(n)%vmove_gut_si(i,j,k) = 0.0 ! No swimming
+                         zoo(n)%dvm%vmove_met(i,j,k) = 0.0    ! No swimming
+                         zoo(n)%dvm%vmove_gut(i,j,k) = 0.0    ! No swimming
+                         zoo(n)%dvm%vmove_gut_p(i,j,k)  = 0.0 ! No swimming
+                         zoo(n)%dvm%vmove_gut_fe(i,j,k) = 0.0 ! No swimming
+                         zoo(n)%dvm%vmove_gut_si(i,j,k) = 0.0 ! No swimming
                     endif
                                  
 
                 ! Large migratory zooplankton (5)
                 else if ( n .eq. 5 .and. do_dvm ) then
                    ! Enough oxygen
-                   if (cobalt%f_o2(i,j,k) .gt. zoo(n)%swim_stop_o2) then
+                   if (cobalt%f_o2(i,j,k) .gt. zoo(n)%dvm_p%swim_stop_o2) then
                         zoo(n)%vmove(i,j,k) = swim        ! Downward
-                        zoo(n)%vmove_met(i,j,k) = swim    ! Downward
-                        zoo(n)%vmove_gut(i,j,k) = swim    ! Downward
-                        zoo(n)%vmove_gut_p(i,j,k)  = swim ! Downward
-                        zoo(n)%vmove_gut_fe(i,j,k) = swim ! Downward
-                        zoo(n)%vmove_gut_si(i,j,k) = swim ! Downward
+                        zoo(n)%dvm%vmove_met(i,j,k) = swim    ! Downward
+                        zoo(n)%dvm%vmove_gut(i,j,k) = swim    ! Downward
+                        zoo(n)%dvm%vmove_gut_p(i,j,k)  = swim ! Downward
+                        zoo(n)%dvm%vmove_gut_fe(i,j,k) = swim ! Downward
+                        zoo(n)%dvm%vmove_gut_si(i,j,k) = swim ! Downward
                
                    ! Not enough oxygen
                    else
                         zoo(n)%vmove(i,j,k) = 0.0        ! No swimming
-                        zoo(n)%vmove_met(i,j,k) = 0.0    ! No swimming
-                        zoo(n)%vmove_gut(i,j,k) = 0.0    ! No swimming
-                        zoo(n)%vmove_gut_p(i,j,k)  = 0.0 ! No swimming
-                        zoo(n)%vmove_gut_fe(i,j,k) = 0.0 ! No swimming
-                        zoo(n)%vmove_gut_si(i,j,k) = 0.0 ! No swimming
+                        zoo(n)%dvm%vmove_met(i,j,k) = 0.0    ! No swimming
+                        zoo(n)%dvm%vmove_gut(i,j,k) = 0.0    ! No swimming
+                        zoo(n)%dvm%vmove_gut_p(i,j,k)  = 0.0 ! No swimming
+                        zoo(n)%dvm%vmove_gut_fe(i,j,k) = 0.0 ! No swimming
+                        zoo(n)%dvm%vmove_gut_si(i,j,k) = 0.0 ! No swimming
                    endif
 
                ! Others (1,2,3)
                else
                   ! Enough oxygen
-                  if (cobalt%f_o2(i,j,k) .gt. zoo(n)%swim_stop_o2) then 
+                  if (cobalt%f_o2(i,j,k) .gt. zoo(n)%dvm_p%swim_stop_o2) then
                        zoo(n)%vmove(i,j,k) = swim ! Downward
               
                   ! Not enough oxygen
@@ -552,24 +554,24 @@ module COBALT_eco
     type(zooplankton), dimension(NUM_ZOO), intent(inout) :: zoo
     real,                                  intent(in)    :: temp_val
 
-           zoo(m)%jclear_gut_n(i,j,k)  = (zoo(m)%k_clear_gut + zoo(m)%k_temp_gut * temp_val) * zoo(m)%f_gut_n(i,j,k)
-           zoo(m)%jclear_gut_p(i,j,k)  = (zoo(m)%k_clear_gut + zoo(m)%k_temp_gut * temp_val) * zoo(m)%f_gut_p(i,j,k)
-           zoo(m)%jclear_gut_fe(i,j,k) = (zoo(m)%k_clear_gut + zoo(m)%k_temp_gut * temp_val) * zoo(m)%f_gut_fe(i,j,k)
-           zoo(m)%jclear_gut_si(i,j,k) = (zoo(m)%k_clear_gut + zoo(m)%k_temp_gut * temp_val) * zoo(m)%f_gut_si(i,j,k)
+           zoo(m)%dvm%jclear_gut_n(i,j,k)  = (zoo(m)%dvm_p%k_clear_gut + zoo(m)%dvm_p%k_temp_gut * temp_val) * zoo(m)%dvm%f_gut_n(i,j,k)
+           zoo(m)%dvm%jclear_gut_p(i,j,k)  = (zoo(m)%dvm_p%k_clear_gut + zoo(m)%dvm_p%k_temp_gut * temp_val) * zoo(m)%dvm%f_gut_p(i,j,k)
+           zoo(m)%dvm%jclear_gut_fe(i,j,k) = (zoo(m)%dvm_p%k_clear_gut + zoo(m)%dvm_p%k_temp_gut * temp_val) * zoo(m)%dvm%f_gut_fe(i,j,k)
+           zoo(m)%dvm%jclear_gut_si(i,j,k) = (zoo(m)%dvm_p%k_clear_gut + zoo(m)%dvm_p%k_temp_gut * temp_val) * zoo(m)%dvm%f_gut_si(i,j,k)
            
-           zoo(m)%lim_nut_n_ingestion(i,j,k) = min(zoo(m)%jclear_gut_n(i,j,k), zoo(m)%jclear_gut_p(i,j,k)/zoo(m)%q_p_2_n)
+           zoo(m)%dvm%lim_nut_n_ingestion(i,j,k) = min(zoo(m)%dvm%jclear_gut_n(i,j,k), zoo(m)%dvm%jclear_gut_p(i,j,k)/zoo(m)%q_p_2_n)
 
-           zoo(m)%jprod_ndet(i,j,k)   = zoo(m)%phi_det   * zoo(m)%lim_nut_n_ingestion(i,j,k)
-           zoo(m)%jprod_pdet(i,j,k)   = zoo(m)%phi_det   * zoo(m)%lim_nut_n_ingestion(i,j,k)*zoo(m)%q_p_2_n
-           zoo(m)%jprod_sldon(i,j,k)  = zoo(m)%phi_sldon * zoo(m)%lim_nut_n_ingestion(i,j,k)
-           zoo(m)%jprod_ldon(i,j,k)   = zoo(m)%phi_ldon  * zoo(m)%lim_nut_n_ingestion(i,j,k)
-           zoo(m)%jprod_srdon(i,j,k)  = zoo(m)%phi_srdon * zoo(m)%lim_nut_n_ingestion(i,j,k)
-           zoo(m)%jprod_sldop(i,j,k)  = zoo(m)%phi_sldop * zoo(m)%lim_nut_n_ingestion(i,j,k)*zoo(m)%q_p_2_n
-           zoo(m)%jprod_ldop(i,j,k)   = zoo(m)%phi_ldop  * zoo(m)%lim_nut_n_ingestion(i,j,k)*zoo(m)%q_p_2_n
-           zoo(m)%jprod_srdop(i,j,k)  = zoo(m)%phi_srdop * zoo(m)%lim_nut_n_ingestion(i,j,k)*zoo(m)%q_p_2_n
+           zoo(m)%jprod_ndet(i,j,k)   = zoo(m)%phi_det   * zoo(m)%dvm%lim_nut_n_ingestion(i,j,k)
+           zoo(m)%jprod_pdet(i,j,k)   = zoo(m)%phi_det   * zoo(m)%dvm%lim_nut_n_ingestion(i,j,k)*zoo(m)%q_p_2_n
+           zoo(m)%jprod_sldon(i,j,k)  = zoo(m)%phi_sldon * zoo(m)%dvm%lim_nut_n_ingestion(i,j,k)
+           zoo(m)%jprod_ldon(i,j,k)   = zoo(m)%phi_ldon  * zoo(m)%dvm%lim_nut_n_ingestion(i,j,k)
+           zoo(m)%jprod_srdon(i,j,k)  = zoo(m)%phi_srdon * zoo(m)%dvm%lim_nut_n_ingestion(i,j,k)
+           zoo(m)%jprod_sldop(i,j,k)  = zoo(m)%phi_sldop * zoo(m)%dvm%lim_nut_n_ingestion(i,j,k)*zoo(m)%q_p_2_n
+           zoo(m)%jprod_ldop(i,j,k)   = zoo(m)%phi_ldop  * zoo(m)%dvm%lim_nut_n_ingestion(i,j,k)*zoo(m)%q_p_2_n
+           zoo(m)%jprod_srdop(i,j,k)  = zoo(m)%phi_srdop * zoo(m)%dvm%lim_nut_n_ingestion(i,j,k)*zoo(m)%q_p_2_n
            
-           zoo(m)%jprod_fedet(i,j,k)  = zoo(m)%phi_det    * zoo(m)%jclear_gut_fe(i,j,k)
-           zoo(m)%jprod_sidet(i,j,k)  = zoo(m)%phi_det_si * zoo(m)%jclear_gut_si(i,j,k)
+           zoo(m)%jprod_fedet(i,j,k)  = zoo(m)%phi_det    * zoo(m)%dvm%jclear_gut_fe(i,j,k)
+           zoo(m)%jprod_sidet(i,j,k)  = zoo(m)%phi_det_si * zoo(m)%dvm%jclear_gut_si(i,j,k)
   end subroutine dvm_gut_production
 
   !> DVM group-4/5 bioenergetics: gut/metabolite production, basal respiration
@@ -586,25 +588,25 @@ module COBALT_eco
     type(generic_COBALT_type),             intent(inout) :: cobalt
     real,                                  intent(in)    :: assim_eff, basal_respiration
 
-             zoo(m)%jprod_gut_n(i,j,k)   = zoo(m)%jingest_n(i,j,k)
-             zoo(m)%jprod_gut_p(i,j,k)   = zoo(m)%jingest_p(i,j,k)
-             zoo(m)%jprod_gut_fe(i,j,k)  = zoo(m)%jingest_fe(i,j,k)
-             zoo(m)%jprod_gut_si(i,j,k)  = zoo(m)%jingest_sio2(i,j,k)
+             zoo(m)%dvm%jprod_gut_n(i,j,k)   = zoo(m)%jingest_n(i,j,k)
+             zoo(m)%dvm%jprod_gut_p(i,j,k)   = zoo(m)%jingest_p(i,j,k)
+             zoo(m)%dvm%jprod_gut_fe(i,j,k)  = zoo(m)%jingest_fe(i,j,k)
+             zoo(m)%dvm%jprod_gut_si(i,j,k)  = zoo(m)%jingest_sio2(i,j,k)
 
-             zoo(m)%jprod_met_n(i,j,k)   = assim_eff * zoo(m)%lim_nut_n_ingestion(i,j,k) 
-             zoo(m)%jclear_met_n(i,j,k)  = zoo(m)%f_met_n(i,j,k)   * zoo(m)%k_clear_met
+             zoo(m)%dvm%jprod_met_n(i,j,k)   = assim_eff * zoo(m)%dvm%lim_nut_n_ingestion(i,j,k)
+             zoo(m)%dvm%jclear_met_n(i,j,k)  = zoo(m)%dvm%f_met_n(i,j,k)   * zoo(m)%dvm_p%k_clear_met
 
-             zoo(m)%jmetabo_n(i,j,k) =  basal_respiration * (1 + abs(zoo(m)%vmove(i,j,k)) / zoo(m)%swim_ref)
+             zoo(m)%dvm%jmetabo_n(i,j,k) =  basal_respiration * (1 + abs(zoo(m)%vmove(i,j,k)) / zoo(m)%dvm_p%swim_ref)
              
-             zoo(m)%jprod_n(i,j,k)   =  zoo(m)%jclear_met_n(i,j,k) - zoo(m)%jmetabo_n(i,j,k)
+             zoo(m)%jprod_n(i,j,k)   =  zoo(m)%dvm%jclear_met_n(i,j,k) - zoo(m)%dvm%jmetabo_n(i,j,k)
              
-             zoo(m)%jprod_nh4(i,j,k)  =  zoo(m)%jclear_gut_n(i,j,k) - zoo(m)%lim_nut_n_ingestion(i,j,k) + zoo(m)%jmetabo_n(i,j,k) +  &
+             zoo(m)%jprod_nh4(i,j,k)  =  zoo(m)%dvm%jclear_gut_n(i,j,k) - zoo(m)%dvm%lim_nut_n_ingestion(i,j,k) + zoo(m)%dvm%jmetabo_n(i,j,k) +  &
                                          min(zoo(m)%jprod_n(i,j,k),0.0)
-             zoo(m)%jprod_po4(i,j,k) =  zoo(m)%jclear_gut_p(i,j,k) - zoo(m)%lim_nut_n_ingestion(i,j,k) * zoo(m)%q_p_2_n + &
-                                        zoo(m)%jmetabo_n(i,j,k) * zoo(m)%q_p_2_n  + min(zoo(m)%jprod_n(i,j,k)*zoo(m)%q_p_2_n,0.0)
+             zoo(m)%jprod_po4(i,j,k) =  zoo(m)%dvm%jclear_gut_p(i,j,k) - zoo(m)%dvm%lim_nut_n_ingestion(i,j,k) * zoo(m)%q_p_2_n + &
+                                        zoo(m)%dvm%jmetabo_n(i,j,k) * zoo(m)%q_p_2_n  + min(zoo(m)%jprod_n(i,j,k)*zoo(m)%q_p_2_n,0.0)
               
-             zoo(m)%jprod_fed(i,j,k)  = zoo(m)%jclear_gut_fe(i,j,k) - zoo(m)%jprod_fedet(i,j,k)
-             zoo(m)%jprod_sio4(i,j,k) = zoo(m)%jclear_gut_si(i,j,k) - zoo(m)%jprod_sidet(i,j,k)
+             zoo(m)%jprod_fed(i,j,k)  = zoo(m)%dvm%jclear_gut_fe(i,j,k) - zoo(m)%jprod_fedet(i,j,k)
+             zoo(m)%jprod_sio4(i,j,k) = zoo(m)%dvm%jclear_gut_si(i,j,k) - zoo(m)%jprod_sidet(i,j,k)
               
              if (zoo(m)%jprod_n(i,j,k) .lt. 0.0) then
                 ! The negative production (i.e., mortality) is lost to large detritus. Update values
@@ -693,19 +695,19 @@ module COBALT_eco
                               zoo(4)%jhploss_n(i,j,k)
         cobalt%dvm%p_nvmmdz(i,j,k,tau) = cobalt%dvm%p_nvmmdz(i,j,k,tau) + cobalt%dvm%jnvmmdz(i,j,k)*dt*tmask
         
-        cobalt%dvm%jnvmmdz_gut(i,j,k) = zoo(4)%jprod_gut_n(i,j,k) - zoo(4)%jclear_gut_n(i,j,k)                               ! mpoupon
+        cobalt%dvm%jnvmmdz_gut(i,j,k) = zoo(4)%dvm%jprod_gut_n(i,j,k) - zoo(4)%dvm%jclear_gut_n(i,j,k)                               ! mpoupon
         cobalt%dvm%p_nvmmdz_gut(i,j,k,tau) = cobalt%dvm%p_nvmmdz_gut(i,j,k,tau) + cobalt%dvm%jnvmmdz_gut(i,j,k)*dt*tmask ! mpoupon
         
-        cobalt%dvm%jpvmmdz_gut(i,j,k) = zoo(4)%jprod_gut_p(i,j,k) - zoo(4)%jclear_gut_p(i,j,k)                               ! mpoupon
+        cobalt%dvm%jpvmmdz_gut(i,j,k) = zoo(4)%dvm%jprod_gut_p(i,j,k) - zoo(4)%dvm%jclear_gut_p(i,j,k)                               ! mpoupon
         cobalt%dvm%p_pvmmdz_gut(i,j,k,tau) = cobalt%dvm%p_pvmmdz_gut(i,j,k,tau) + cobalt%dvm%jpvmmdz_gut(i,j,k)*dt*tmask ! mpoupon
         
-        cobalt%dvm%jfevmmdz_gut(i,j,k) = zoo(4)%jprod_gut_fe(i,j,k) - zoo(4)%jclear_gut_fe(i,j,k)                               ! mpoupon
+        cobalt%dvm%jfevmmdz_gut(i,j,k) = zoo(4)%dvm%jprod_gut_fe(i,j,k) - zoo(4)%dvm%jclear_gut_fe(i,j,k)                               ! mpoupon
         cobalt%dvm%p_fevmmdz_gut(i,j,k,tau) = cobalt%dvm%p_fevmmdz_gut(i,j,k,tau) + cobalt%dvm%jfevmmdz_gut(i,j,k)*dt*tmask ! mpoupon
     
-        cobalt%dvm%jsivmmdz_gut(i,j,k) = zoo(4)%jprod_gut_si(i,j,k) - zoo(4)%jclear_gut_si(i,j,k)                               ! mpoupon
+        cobalt%dvm%jsivmmdz_gut(i,j,k) = zoo(4)%dvm%jprod_gut_si(i,j,k) - zoo(4)%dvm%jclear_gut_si(i,j,k)                               ! mpoupon
         cobalt%dvm%p_sivmmdz_gut(i,j,k,tau) = cobalt%dvm%p_sivmmdz_gut(i,j,k,tau) + cobalt%dvm%jsivmmdz_gut(i,j,k)*dt*tmask ! mpoupon
 
-        cobalt%dvm%jnvmmdz_met(i,j,k) = zoo(4)%jprod_met_n(i,j,k) - zoo(4)%jclear_met_n(i,j,k)                               ! mpoupon
+        cobalt%dvm%jnvmmdz_met(i,j,k) = zoo(4)%dvm%jprod_met_n(i,j,k) - zoo(4)%dvm%jclear_met_n(i,j,k)                               ! mpoupon
         cobalt%dvm%p_nvmmdz_met(i,j,k,tau) = cobalt%dvm%p_nvmmdz_met(i,j,k,tau) + cobalt%dvm%jnvmmdz_met(i,j,k)*dt*tmask ! mpoupon
 
         !
@@ -715,19 +717,19 @@ module COBALT_eco
                               zoo(5)%jhploss_n(i,j,k)
         cobalt%dvm%p_nvmlgz(i,j,k,tau) = cobalt%dvm%p_nvmlgz(i,j,k,tau) + cobalt%dvm%jnvmlgz(i,j,k)*dt*tmask
         
-        cobalt%dvm%jnvmlgz_gut(i,j,k) =  zoo(5)%jprod_gut_n(i,j,k) - zoo(5)%jclear_gut_n(i,j,k)                              ! mpoupon
+        cobalt%dvm%jnvmlgz_gut(i,j,k) =  zoo(5)%dvm%jprod_gut_n(i,j,k) - zoo(5)%dvm%jclear_gut_n(i,j,k)                              ! mpoupon
         cobalt%dvm%p_nvmlgz_gut(i,j,k,tau) = cobalt%dvm%p_nvmlgz_gut(i,j,k,tau) + cobalt%dvm%jnvmlgz_gut(i,j,k)*dt*tmask ! mpoupon
    
-        cobalt%dvm%jpvmlgz_gut(i,j,k) =  zoo(5)%jprod_gut_p(i,j,k) - zoo(5)%jclear_gut_p(i,j,k)                              ! mpoupon
+        cobalt%dvm%jpvmlgz_gut(i,j,k) =  zoo(5)%dvm%jprod_gut_p(i,j,k) - zoo(5)%dvm%jclear_gut_p(i,j,k)                              ! mpoupon
         cobalt%dvm%p_pvmlgz_gut(i,j,k,tau) = cobalt%dvm%p_pvmlgz_gut(i,j,k,tau) + cobalt%dvm%jpvmlgz_gut(i,j,k)*dt*tmask ! mpoupon
         
-        cobalt%dvm%jfevmlgz_gut(i,j,k) =  zoo(5)%jprod_gut_fe(i,j,k) - zoo(5)%jclear_gut_fe(i,j,k)                              ! mpoupon
+        cobalt%dvm%jfevmlgz_gut(i,j,k) =  zoo(5)%dvm%jprod_gut_fe(i,j,k) - zoo(5)%dvm%jclear_gut_fe(i,j,k)                              ! mpoupon
         cobalt%dvm%p_fevmlgz_gut(i,j,k,tau) = cobalt%dvm%p_fevmlgz_gut(i,j,k,tau) + cobalt%dvm%jfevmlgz_gut(i,j,k)*dt*tmask ! mpoupon
         
-        cobalt%dvm%jsivmlgz_gut(i,j,k) =  zoo(5)%jprod_gut_si(i,j,k) - zoo(5)%jclear_gut_si(i,j,k)                              ! mpoupon
+        cobalt%dvm%jsivmlgz_gut(i,j,k) =  zoo(5)%dvm%jprod_gut_si(i,j,k) - zoo(5)%dvm%jclear_gut_si(i,j,k)                              ! mpoupon
         cobalt%dvm%p_sivmlgz_gut(i,j,k,tau) = cobalt%dvm%p_sivmlgz_gut(i,j,k,tau) + cobalt%dvm%jsivmlgz_gut(i,j,k)*dt*tmask ! mpoupon
 
-        cobalt%dvm%jnvmlgz_met(i,j,k) =  zoo(5)%jprod_met_n(i,j,k) - zoo(5)%jclear_met_n(i,j,k)                              ! mpoupon
+        cobalt%dvm%jnvmlgz_met(i,j,k) =  zoo(5)%dvm%jprod_met_n(i,j,k) - zoo(5)%dvm%jclear_met_n(i,j,k)                              ! mpoupon
         cobalt%dvm%p_nvmlgz_met(i,j,k,tau) = cobalt%dvm%p_nvmlgz_met(i,j,k,tau) + cobalt%dvm%jnvmlgz_met(i,j,k)*dt*tmask ! mpoupon
   end subroutine dvm_apply_tendencies
 
@@ -753,7 +755,7 @@ module COBALT_eco
      cobalt%tot_layer_int_n(:,:,:) = cobalt%tot_layer_int_n(:,:,:) + &
           (cobalt%dvm%p_nvmmdz(:,:,:,tau) + cobalt%dvm%p_nvmlgz(:,:,:,tau) + cobalt%dvm%p_nvmmdz_met(:,:,:,tau) + &
           cobalt%dvm%p_nvmlgz_met(:,:,:,tau) + cobalt%dvm%p_nvmmdz_gut(:,:,:,tau) + cobalt%dvm%p_nvmlgz_gut(:,:,:,tau)) * &
-		 rho_dzt(:,:,:)
+          rho_dzt(:,:,:)
      cobalt%tot_layer_int_p(:,:,:) = cobalt%tot_layer_int_p(:,:,:) + &
           (zoo(4)%q_p_2_n*cobalt%dvm%p_nvmmdz(:,:,:,tau) + &
           zoo(5)%q_p_2_n*cobalt%dvm%p_nvmlgz(:,:,:,tau) + &

@@ -3418,16 +3418,16 @@ contains
     if (do_dvm) then
       call g_tracer_get_values(tracer_list,'nvmmdz'  ,'field',zoo(4)%f_n(:,:,:) ,isd,jsd,positive=.true.)
       call g_tracer_get_values(tracer_list,'nvmlgz'  ,'field',zoo(5)%f_n(:,:,:) ,isd,jsd,positive=.true.)
-      call g_tracer_get_values(tracer_list,'nvmmdz_met'  ,'field',zoo(4)%f_met_n(:,:,:) ,isd,jsd,positive=.true.)
-      call g_tracer_get_values(tracer_list,'nvmlgz_met'  ,'field',zoo(5)%f_met_n(:,:,:) ,isd,jsd,positive=.true.)
-      call g_tracer_get_values(tracer_list,'nvmmdz_gut'  ,'field',zoo(4)%f_gut_n(:,:,:) ,isd,jsd,positive=.true.)
-      call g_tracer_get_values(tracer_list,'nvmlgz_gut'  ,'field',zoo(5)%f_gut_n(:,:,:) ,isd,jsd,positive=.true.)
-      call g_tracer_get_values(tracer_list,'pvmmdz_gut'  ,'field',zoo(4)%f_gut_p(:,:,:) ,isd,jsd,positive=.true.)
-      call g_tracer_get_values(tracer_list,'pvmlgz_gut'  ,'field',zoo(5)%f_gut_p(:,:,:) ,isd,jsd,positive=.true.)
-      call g_tracer_get_values(tracer_list,'fevmmdz_gut'  ,'field',zoo(4)%f_gut_fe(:,:,:) ,isd,jsd,positive=.true.)
-      call g_tracer_get_values(tracer_list,'fevmlgz_gut'  ,'field',zoo(5)%f_gut_fe(:,:,:) ,isd,jsd,positive=.true.)
-      call g_tracer_get_values(tracer_list,'sivmmdz_gut'  ,'field',zoo(4)%f_gut_si(:,:,:) ,isd,jsd,positive=.true.)
-      call g_tracer_get_values(tracer_list,'sivmlgz_gut'  ,'field',zoo(5)%f_gut_si(:,:,:) ,isd,jsd,positive=.true.)
+      call g_tracer_get_values(tracer_list,'nvmmdz_met'  ,'field',zoo(4)%dvm%f_met_n(:,:,:) ,isd,jsd,positive=.true.)
+      call g_tracer_get_values(tracer_list,'nvmlgz_met'  ,'field',zoo(5)%dvm%f_met_n(:,:,:) ,isd,jsd,positive=.true.)
+      call g_tracer_get_values(tracer_list,'nvmmdz_gut'  ,'field',zoo(4)%dvm%f_gut_n(:,:,:) ,isd,jsd,positive=.true.)
+      call g_tracer_get_values(tracer_list,'nvmlgz_gut'  ,'field',zoo(5)%dvm%f_gut_n(:,:,:) ,isd,jsd,positive=.true.)
+      call g_tracer_get_values(tracer_list,'pvmmdz_gut'  ,'field',zoo(4)%dvm%f_gut_p(:,:,:) ,isd,jsd,positive=.true.)
+      call g_tracer_get_values(tracer_list,'pvmlgz_gut'  ,'field',zoo(5)%dvm%f_gut_p(:,:,:) ,isd,jsd,positive=.true.)
+      call g_tracer_get_values(tracer_list,'fevmmdz_gut'  ,'field',zoo(4)%dvm%f_gut_fe(:,:,:) ,isd,jsd,positive=.true.)
+      call g_tracer_get_values(tracer_list,'fevmlgz_gut'  ,'field',zoo(5)%dvm%f_gut_fe(:,:,:) ,isd,jsd,positive=.true.)
+      call g_tracer_get_values(tracer_list,'sivmmdz_gut'  ,'field',zoo(4)%dvm%f_gut_si(:,:,:) ,isd,jsd,positive=.true.)
+      call g_tracer_get_values(tracer_list,'sivmlgz_gut'  ,'field',zoo(5)%dvm%f_gut_si(:,:,:) ,isd,jsd,positive=.true.)
     endif
     !
     ! bacteria
@@ -4171,8 +4171,8 @@ contains
        ipa_matrix(m,6)  = zoo(m)%ipa_smz
        ipa_matrix(m,7)  = zoo(m)%ipa_mdz
        ipa_matrix(m,8)  = zoo(m)%ipa_lgz
-       ipa_matrix(m,9)  = zoo(m)%ipa_vmmdz
-       ipa_matrix(m,10) = zoo(m)%ipa_vmlgz
+       ipa_matrix(m,9)  = zoo(m)%dvm_p%ipa_vmmdz
+       ipa_matrix(m,10) = zoo(m)%dvm_p%ipa_vmlgz
        ipa_matrix(m,11) = zoo(m)%ipa_det
        tot_prey(m) = 0.0
        ! do_dvm=.false. INVARIANT: ingest_matrix is zeroed here once for the whole
@@ -4548,11 +4548,17 @@ contains
 
        ! Calculate assimilation efficiency.
        ! Allows for AE to vary between max and min values with a michaelis-menten functional form
-       
-       do m = 1,NUM_ZOO
-          zoo(m)%assim_eff(i,j,k) = zoo(m)%assim_eff_max - ((zoo(m)%assim_eff_max - zoo(m)%assim_eff_min) * &
-                                 (tot_prey(m)/(zoo(m)%kae + tot_prey(m))))
-       enddo
+       ! NOTE: assim_eff is a DVM-era, diagnostic-only array (never read by physics), and its
+       ! max/min/kae parameters (now in zoo%dvm_p) are currently never set.  The write is
+       ! guarded behind do_dvm so do_dvm=.false. leaves assim_eff at its 0.0 init (harmless:
+       ! it is registered/sent only when do_dvm).  Pending confirmation that
+       ! this block can be removed entirely.
+       if (do_dvm) then
+          do m = 1,NUM_ZOO
+             zoo(m)%assim_eff(i,j,k) = zoo(m)%dvm_p%assim_eff_max - ((zoo(m)%dvm_p%assim_eff_max - zoo(m)%dvm_p%assim_eff_min) * &
+                                    (tot_prey(m)/(zoo(m)%dvm_p%kae + tot_prey(m))))
+          enddo
+       endif
 
        !
        ! calculate losses of each prey type to zooplankton, starting with phytoplankton
@@ -4810,19 +4816,19 @@ contains
     if (do_dvm) then
       ! Medium migrating zoo (group 4)
       call g_tracer_set_values(tracer_list,'nvmmdz',      'vmove',zoo(4)%vmove,        isd,jsd)
-      call g_tracer_set_values(tracer_list,'nvmmdz_met',  'vmove',zoo(4)%vmove_met,    isd,jsd)
-      call g_tracer_set_values(tracer_list,'nvmmdz_gut',  'vmove',zoo(4)%vmove_gut,    isd,jsd)
-      call g_tracer_set_values(tracer_list,'pvmmdz_gut',  'vmove',zoo(4)%vmove_gut_p,  isd,jsd)
-      call g_tracer_set_values(tracer_list,'fevmmdz_gut', 'vmove',zoo(4)%vmove_gut_fe, isd,jsd)
-      call g_tracer_set_values(tracer_list,'sivmmdz_gut', 'vmove',zoo(4)%vmove_gut_si, isd,jsd)
+      call g_tracer_set_values(tracer_list,'nvmmdz_met',  'vmove',zoo(4)%dvm%vmove_met,    isd,jsd)
+      call g_tracer_set_values(tracer_list,'nvmmdz_gut',  'vmove',zoo(4)%dvm%vmove_gut,    isd,jsd)
+      call g_tracer_set_values(tracer_list,'pvmmdz_gut',  'vmove',zoo(4)%dvm%vmove_gut_p,  isd,jsd)
+      call g_tracer_set_values(tracer_list,'fevmmdz_gut', 'vmove',zoo(4)%dvm%vmove_gut_fe, isd,jsd)
+      call g_tracer_set_values(tracer_list,'sivmmdz_gut', 'vmove',zoo(4)%dvm%vmove_gut_si, isd,jsd)
 
       ! Large migrating zoo (group 5)
       call g_tracer_set_values(tracer_list,'nvmlgz',      'vmove',zoo(5)%vmove,        isd,jsd)
-      call g_tracer_set_values(tracer_list,'nvmlgz_met',  'vmove',zoo(5)%vmove_met,    isd,jsd)
-      call g_tracer_set_values(tracer_list,'nvmlgz_gut',  'vmove',zoo(5)%vmove_gut,    isd,jsd)
-      call g_tracer_set_values(tracer_list,'pvmlgz_gut',  'vmove',zoo(5)%vmove_gut_p,  isd,jsd)
-      call g_tracer_set_values(tracer_list,'fevmlgz_gut', 'vmove',zoo(5)%vmove_gut_fe, isd,jsd)
-      call g_tracer_set_values(tracer_list,'sivmlgz_gut', 'vmove',zoo(5)%vmove_gut_si, isd,jsd)
+      call g_tracer_set_values(tracer_list,'nvmlgz_met',  'vmove',zoo(5)%dvm%vmove_met,    isd,jsd)
+      call g_tracer_set_values(tracer_list,'nvmlgz_gut',  'vmove',zoo(5)%dvm%vmove_gut,    isd,jsd)
+      call g_tracer_set_values(tracer_list,'pvmlgz_gut',  'vmove',zoo(5)%dvm%vmove_gut_p,  isd,jsd)
+      call g_tracer_set_values(tracer_list,'fevmlgz_gut', 'vmove',zoo(5)%dvm%vmove_gut_fe, isd,jsd)
+      call g_tracer_set_values(tracer_list,'sivmlgz_gut', 'vmove',zoo(5)%dvm%vmove_gut_si, isd,jsd)
     endif
 
     call mpp_clock_end(id_clock_other_losses)
@@ -7779,7 +7785,6 @@ contains
        allocate(zoo(n)%jhploss_n(isd:ied,jsd:jed,nk))     ; zoo(n)%jhploss_n      = 0.0
        allocate(zoo(n)%jhploss_p(isd:ied,jsd:jed,nk))     ; zoo(n)%jhploss_p      = 0.0
        allocate(zoo(n)%jingest_n(isd:ied,jsd:jed,nk))     ; zoo(n)%jingest_n      = 0.0
-       allocate(zoo(n)%jingest_n_lim(isd:ied,jsd:jed,nk)) ; zoo(n)%jingest_n_lim  = 0.0
        allocate(zoo(n)%jingest_p(isd:ied,jsd:jed,nk))     ; zoo(n)%jingest_p      = 0.0
        allocate(zoo(n)%jingest_sio2(isd:ied,jsd:jed,nk))  ; zoo(n)%jingest_sio2   = 0.0
        allocate(zoo(n)%jingest_fe(isd:ied,jsd:jed,nk))    ; zoo(n)%jingest_fe     = 0.0
@@ -8392,7 +8397,6 @@ contains
        deallocate(zoo(n)%jhploss_n)
        deallocate(zoo(n)%jhploss_p)
        deallocate(zoo(n)%jingest_n)
-       deallocate(zoo(n)%jingest_n_lim)
        deallocate(zoo(n)%jingest_p)
        deallocate(zoo(n)%jingest_sio2)
        deallocate(zoo(n)%jingest_fe)
