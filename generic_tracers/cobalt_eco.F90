@@ -116,6 +116,9 @@ module COBALT_eco
     call get_param(param_file, "generic_COBALT", "mdz_ipa_vmlgz", zoo(2)%ipa_vmlgz, &
                    "innate availability of large migrating zooplankton to medium zooplankton feeding (0-1)", units="none", &
                    default=0.0)
+    !
+    ! Medium migrating zooplankton innate prey availabilities
+    !
     call get_param(param_file, "generic_COBALT", "vmmdz_ipa_smp", zoo(4)%ipa_smp, &
                    "innate availability of small phytoplankton to medium migrating zooplankton feeding (0-1)", units="none", &
                    default=0.4)
@@ -152,7 +155,11 @@ module COBALT_eco
                    default=1.0)
     call get_param(param_file, "generic_COBALT", "lgz_ipa_vmlgz", zoo(3)%ipa_vmlgz, &
                    "innate availability of large migrating zooplankton to large zooplankton feeding (0-1)", units="none", &
-                   default=0.0)
+               default=0.0)
+
+    !
+    ! Large zooplankton/krill innate prey availabilities
+    !
     call get_param(param_file, "generic_COBALT", "vmlgz_ipa_smp", zoo(5)%ipa_smp, &
                    "innate availability of small phytoplankton to large migrating zooplankton feeding (0-1)", units="none", &
                    default=0.0)
@@ -184,6 +191,7 @@ module COBALT_eco
                    "innate availability of bacteria to large migrating zooplankton feeding (0-1)", units="none", default=0.0)
     call get_param(param_file, "generic_COBALT", "vmlgz_ipa_det", zoo(5)%ipa_det, &
                    "innate availability of detritus to large migrating zooplankton feeding (0-1)", units="none", default=0.0)
+
     call get_param(param_file, "generic_COBALT", "nswitch_vmmdz", zoo(4)%nswitch, &
                    "prey switching parameter 1 for medium migrating zooplankton", units="none", default=2.0)
     call get_param(param_file, "generic_COBALT", "nswitch_vmlgz", zoo(5)%nswitch, &
@@ -269,8 +277,8 @@ module COBALT_eco
     integer :: n
 
     allocate(cobalt%dvm)
-    allocate(cobalt%dvm%jnvmmdz(isd:ied, jsd:jed, 1:nk))        ; cobalt%dvm%jnvmmdz=0.0
-    allocate(cobalt%dvm%jnvmlgz(isd:ied, jsd:jed, 1:nk))        ; cobalt%dvm%jnvmlgz=0.0
+    allocate(cobalt%dvm%jnvmmdz(isd:ied, jsd:jed, 1:nk))            ; cobalt%dvm%jnvmmdz=0.0
+    allocate(cobalt%dvm%jnvmlgz(isd:ied, jsd:jed, 1:nk))            ; cobalt%dvm%jnvmlgz=0.0
     allocate(cobalt%dvm%jnvmmdz_gut(isd:ied, jsd:jed, 1:nk))        ; cobalt%dvm%jnvmmdz_gut=0.0
     allocate(cobalt%dvm%jnvmlgz_gut(isd:ied, jsd:jed, 1:nk))        ; cobalt%dvm%jnvmlgz_gut=0.0
     allocate(cobalt%dvm%jpvmmdz_gut(isd:ied, jsd:jed, 1:nk))        ; cobalt%dvm%jpvmmdz_gut=0.0
@@ -283,27 +291,27 @@ module COBALT_eco
     allocate(cobalt%dvm%jnvmlgz_met(isd:ied, jsd:jed, 1:nk))        ; cobalt%dvm%jnvmlgz=0.0
     do n = NUM_BASE_ZOO+1, NUM_ZOO
        allocate(zoo(n)%lim_nut_n_ingestion(isd:ied,jsd:jed,nk))   ; zoo(n)%lim_nut_n_ingestion   = 0.0
-       allocate(zoo(n)%jmetabo_n(isd:ied,jsd:jed,nk))      ; zoo(n)%jmetabo_n      = 0.0
-       allocate(zoo(n)%f_gut_n(isd:ied,jsd:jed,nk))        ; zoo(n)%f_gut_n        = 0.0
-       allocate(zoo(n)%f_gut_p(isd:ied,jsd:jed,nk))        ; zoo(n)%f_gut_p        = 0.0
-       allocate(zoo(n)%f_gut_fe(isd:ied,jsd:jed,nk))       ; zoo(n)%f_gut_fe       = 0.0
-       allocate(zoo(n)%f_gut_si(isd:ied,jsd:jed,nk))       ; zoo(n)%f_gut_si       = 0.0
-       allocate(zoo(n)%f_met_n(isd:ied,jsd:jed,nk))        ; zoo(n)%f_met_n        = 0.0
-       allocate(zoo(n)%jclear_gut_n(isd:ied,jsd:jed,nk))   ; zoo(n)%jclear_gut_n   = 0.0
-       allocate(zoo(n)%jprod_gut_n(isd:ied,jsd:jed,nk))    ; zoo(n)%jprod_gut_n    = 0.0
-       allocate(zoo(n)%jclear_gut_p(isd:ied,jsd:jed,nk))   ; zoo(n)%jclear_gut_p   = 0.0
-       allocate(zoo(n)%jprod_gut_p(isd:ied,jsd:jed,nk))    ; zoo(n)%jprod_gut_p    = 0.0
-       allocate(zoo(n)%jclear_gut_fe(isd:ied,jsd:jed,nk))  ; zoo(n)%jclear_gut_fe  = 0.0
-       allocate(zoo(n)%jprod_gut_fe(isd:ied,jsd:jed,nk))   ; zoo(n)%jprod_gut_fe   = 0.0
-       allocate(zoo(n)%jclear_gut_si(isd:ied,jsd:jed,nk))  ; zoo(n)%jclear_gut_si  = 0.0
-       allocate(zoo(n)%jprod_gut_si(isd:ied,jsd:jed,nk))   ; zoo(n)%jprod_gut_si   = 0.0
-       allocate(zoo(n)%jclear_met_n(isd:ied,jsd:jed,nk))   ; zoo(n)%jclear_met_n   = 0.0
-       allocate(zoo(n)%jprod_met_n(isd:ied,jsd:jed,nk))    ; zoo(n)%jprod_met_n    = 0.0
-       allocate(zoo(n)%vmove_met(isd:ied,jsd:jed,nk))      ; zoo(n)%vmove_met      = 0.0
-       allocate(zoo(n)%vmove_gut(isd:ied,jsd:jed,nk))      ; zoo(n)%vmove_gut      = 0.0
-       allocate(zoo(n)%vmove_gut_p(isd:ied,jsd:jed,nk))    ; zoo(n)%vmove_gut_p    = 0.0
-       allocate(zoo(n)%vmove_gut_fe(isd:ied,jsd:jed,nk))   ; zoo(n)%vmove_gut_fe   = 0.0
-       allocate(zoo(n)%vmove_gut_si(isd:ied,jsd:jed,nk))   ; zoo(n)%vmove_gut_si   = 0.0
+       allocate(zoo(n)%jmetabo_n(isd:ied,jsd:jed,nk))             ; zoo(n)%jmetabo_n      = 0.0
+       allocate(zoo(n)%f_gut_n(isd:ied,jsd:jed,nk))               ; zoo(n)%f_gut_n        = 0.0
+       allocate(zoo(n)%f_gut_p(isd:ied,jsd:jed,nk))               ; zoo(n)%f_gut_p        = 0.0
+       allocate(zoo(n)%f_gut_fe(isd:ied,jsd:jed,nk))              ; zoo(n)%f_gut_fe       = 0.0
+       allocate(zoo(n)%f_gut_si(isd:ied,jsd:jed,nk))              ; zoo(n)%f_gut_si       = 0.0
+       allocate(zoo(n)%f_met_n(isd:ied,jsd:jed,nk))               ; zoo(n)%f_met_n        = 0.0
+       allocate(zoo(n)%jclear_gut_n(isd:ied,jsd:jed,nk))          ; zoo(n)%jclear_gut_n   = 0.0
+       allocate(zoo(n)%jprod_gut_n(isd:ied,jsd:jed,nk))           ; zoo(n)%jprod_gut_n    = 0.0
+       allocate(zoo(n)%jclear_gut_p(isd:ied,jsd:jed,nk))          ; zoo(n)%jclear_gut_p   = 0.0
+       allocate(zoo(n)%jprod_gut_p(isd:ied,jsd:jed,nk))           ; zoo(n)%jprod_gut_p    = 0.0
+       allocate(zoo(n)%jclear_gut_fe(isd:ied,jsd:jed,nk))         ; zoo(n)%jclear_gut_fe  = 0.0
+       allocate(zoo(n)%jprod_gut_fe(isd:ied,jsd:jed,nk))          ; zoo(n)%jprod_gut_fe   = 0.0
+       allocate(zoo(n)%jclear_gut_si(isd:ied,jsd:jed,nk))         ; zoo(n)%jclear_gut_si  = 0.0
+       allocate(zoo(n)%jprod_gut_si(isd:ied,jsd:jed,nk))          ; zoo(n)%jprod_gut_si   = 0.0
+       allocate(zoo(n)%jclear_met_n(isd:ied,jsd:jed,nk))          ; zoo(n)%jclear_met_n   = 0.0
+       allocate(zoo(n)%jprod_met_n(isd:ied,jsd:jed,nk))           ; zoo(n)%jprod_met_n    = 0.0
+       allocate(zoo(n)%vmove_met(isd:ied,jsd:jed,nk))             ; zoo(n)%vmove_met      = 0.0
+       allocate(zoo(n)%vmove_gut(isd:ied,jsd:jed,nk))             ; zoo(n)%vmove_gut      = 0.0
+       allocate(zoo(n)%vmove_gut_p(isd:ied,jsd:jed,nk))           ; zoo(n)%vmove_gut_p    = 0.0
+       allocate(zoo(n)%vmove_gut_fe(isd:ied,jsd:jed,nk))          ; zoo(n)%vmove_gut_fe   = 0.0
+       allocate(zoo(n)%vmove_gut_si(isd:ied,jsd:jed,nk))          ; zoo(n)%vmove_gut_si   = 0.0
     enddo
   end subroutine dvm_alloc_arrays
 
